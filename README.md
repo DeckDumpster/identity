@@ -48,3 +48,34 @@ method must list `groups` in its scopes and `groups` in its claims. It appears i
 and the userinfo response. Cloudflare matches the names exactly, so group names (`cubby-parents`,
 `poke-users`, ...) must match the policies. A client may also be restricted to allowed user
 groups inside Pocket ID.
+
+## Apply (the Concierge, with an MFA session and a Cloudflare token)
+
+`infra/` registers Pocket ID as a Cloudflare Access generic OIDC login method (state key
+`identity/infra/terraform.tfstate` in the shared state bucket). It outputs `login_method_id`
+for app policies. Checked by `testenv --suites test-infra` (fmt, validate, mocked-provider test:
+claims include `groups`, scopes are `openid email profile groups`, no secret in outputs).
+
+1. In Pocket ID, create an OIDC client with redirect URL
+   `https://<team>.cloudflareaccess.com/cdn-cgi/access/callback`. Put its id and secret in a
+   0600 file, never in chat or git:
+
+       install -m 600 /dev/null ~/.config/identity/pocket-id-oidc.json
+       # {"client_id": "...", "client_secret": "..."}
+
+2. Confirm `auth_url`, `token_url`, `certs_url` in `infra/main.tf` against
+   `https://id.gantt.pub/.well-known/openid-configuration`.
+3. Plan and apply:
+
+       export CLOUDFLARE_API_TOKEN=...   # Access: Identity Providers edit
+       cd infra
+       terraform init -backend-config="bucket=<StateBucketName>" \
+         -backend-config="assume_role={role_arn=\"<DeployRoleArn>\"}"
+       terraform plan -out=identity.tfplan -var cloudflare_account_id=<id> \
+         -var credentials_file=$HOME/.config/identity/pocket-id-oidc.json
+       terraform apply identity.tfplan
+
+   Expect `Plan: 1 to add, 0 to change, 0 to destroy`.
+4. In Cloudflare Zero Trust, Settings > Authentication > Pocket ID > Test, and confirm a
+   `groups` claim for Ryan. The client secret is stored in Terraform state (the provider
+   requires it there); it is never an output.
