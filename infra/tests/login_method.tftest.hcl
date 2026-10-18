@@ -1,17 +1,10 @@
 # Plan-only assertions with a mocked provider: no credentials, no network.
 mock_provider "cloudflare" {}
 
-override_resource {
-  target = module.dumpstar.cloudflare_zero_trust_access_application.this
-}
-
-override_resource {
-  target = module.dumpstar.cloudflare_zero_trust_access_policy.allow
-}
-
 variables {
   cloudflare_account_id = "acct"
   cloudflare_zone_id    = "zone"
+  import_existing       = false
   credentials_file      = "tests/credentials.fixture.json"
 
   dumpstar = {

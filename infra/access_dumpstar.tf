@@ -32,11 +32,13 @@ module "dumpstar" {
 }
 
 import {
-  to = module.dumpstar.cloudflare_zero_trust_access_application.this
-  id = "${var.cloudflare_account_id}/${var.dumpstar.app_id}"
+  for_each = var.import_existing ? toset(["dumpstar"]) : toset([])
+  to       = module.dumpstar.cloudflare_zero_trust_access_application.this
+  id       = "${var.cloudflare_account_id}/${var.dumpstar.app_id}"
 }
 
 import {
-  to = module.dumpstar.cloudflare_zero_trust_access_policy.allow
-  id = "${var.cloudflare_account_id}/${var.dumpstar.allow_policy_id}"
+  for_each = var.import_existing ? toset(["dumpstar"]) : toset([])
+  to       = module.dumpstar.cloudflare_zero_trust_access_policy.allow
+  id       = "${var.cloudflare_account_id}/${var.dumpstar.allow_policy_id}"
 }

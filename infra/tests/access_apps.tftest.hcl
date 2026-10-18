@@ -2,16 +2,9 @@
 # instant auth, and the service-token policy still attached. Mocked provider, no network.
 mock_provider "cloudflare" {}
 
-override_resource {
-  target = module.dumpstar.cloudflare_zero_trust_access_application.this
-}
-
-override_resource {
-  target = module.dumpstar.cloudflare_zero_trust_access_policy.allow
-}
-
 variables {
   cloudflare_account_id = "acct"
+  import_existing       = false
   credentials_file      = "tests/credentials.fixture.json"
 
   dumpstar = {
