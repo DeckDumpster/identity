@@ -16,14 +16,22 @@ fi
 key=$(tr -d '[:space:]' <"$keyfile")
 api() { curl -fsS -H "X-API-KEY: $key" "$@"; }
 
-want_name=$(jq -r .app_name "$brand")
-want_accent=$(jq -r .accent_color "$brand")
+py() { python3 -I -c "$@"; }
+want_name=$(py 'import json,sys; print(json.load(open(sys.argv[1]))["app_name"])' "$brand")
+want_accent=$(py 'import json,sys; print(json.load(open(sys.argv[1]))["accent_color"])' "$brand")
 live=$(api "$base/api/application-configuration/all")
-val() { jq -r --arg k "$1" '.[] | select(.key==$k) | .value' <<<"$live"; }
-if [ "$(val appName)" != "$want_name" ] || [ "$(val accentColor)" != "$want_accent" ]; then
-  # The update endpoint replaces the whole configuration, so send back every live value.
-  body=$(jq -n --argjson all "$live" --arg n "$want_name" --arg a "$want_accent" \
-    '($all | map({(.key): .value}) | add) + {appName: $n, accentColor: $a}')
+# The update endpoint replaces the whole configuration, so send back every live value, with ours
+# laid over it; print nothing when ours already match.
+body=$(py '
+import json, sys
+cfg = {e["key"]: e["value"] for e in json.loads(sys.argv[1])}
+want = {"appName": sys.argv[2], "accentColor": sys.argv[3]}
+if all(cfg.get(k) == v for k, v in want.items()):
+    sys.exit(0)
+cfg.update(want)
+print(json.dumps(cfg))
+' "$live" "$want_name" "$want_accent")
+if [ -n "$body" ]; then
   api -X PUT -H 'Content-Type: application/json' --data-binary @- "$base/api/application-configuration" <<<"$body" >/dev/null
   echo "apply-branding.sh: set name '$want_name' and accent $want_accent"
 fi

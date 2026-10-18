@@ -25,16 +25,16 @@ check "tunnel shares the host network to reach loopback" grep -Fxq 'Network=host
 check "secrets come from env files, not units" \
   bash -c 'grep -q "^EnvironmentFile=/cfg/pocket-id.env$" "$1" && grep -q "^EnvironmentFile=/cfg/cloudflared-id.env$" "$2" && ! grep -Eq "ENCRYPTION_KEY=|TUNNEL_TOKEN=" "$1" "$2"' _ "$pc" "$cf"
 check "no unrendered placeholders" bash -c '! grep -q "@[A-Z_]*@" "$@"' _ "$out"/units/*
-check "no Access app for id.gantt.pub in repo" \
-  bash -c '! grep -rIl "cloudflare_zero_trust_access_application" --exclude=test-deploy.sh --exclude=test-infra.sh "$1" | grep -q .' _ "$root"
+# (an Access app on id.gantt.pub is refused by test-infra.sh, by domain)
 
 # Branding: one palette shared by Cloudflare's login page (Terraform) and Pocket ID (apply-branding.sh).
 b=$root/deploy/branding
+bj() { python3 -I -c 'import json,re,sys; d=json.load(open(sys.argv[1])); sys.exit(0 if eval(sys.argv[2]) else 1)' "$b/branding.json" "$1"; }
 check "branding.json carries every field" \
-  jq -e '[.app_name,.header_text,.footer_text,.accent_color,.background_color,.text_color] | all(type=="string" and length>0)' "$b/branding.json"
+  bj 'all(isinstance(d.get(k),str) and d[k] for k in ["app_name","header_text","footer_text","accent_color","background_color","text_color"])'
 check "branding colours are hex" \
-  jq -e '[.accent_color,.background_color,.text_color] | all(test("^#[0-9a-fA-F]{6}$"))' "$b/branding.json"
-check "app name fits Pocket ID's 30 character limit" jq -e '.app_name | length <= 30' "$b/branding.json"
+  bj 'all(re.fullmatch(r"#[0-9a-fA-F]{6}", d[k]) for k in ["accent_color","background_color","text_color"])'
+check "app name fits Pocket ID's 30 character limit" bj 'len(d["app_name"]) <= 30' 
 check "logo is an svg" grep -q '<svg' "$b/logo.svg"
 check "deploy applies the branding" grep -q 'apply-branding.sh' "$root/deploy/deploy.sh"
 # apply-branding.sh against a fake Pocket ID: first run writes, second run changes nothing.
@@ -55,7 +55,7 @@ export FAKE_LOG=$fake/log FAKE_STATE=$fake FAKE_LOGO=$b/logo.svg
 mv "$fake/config.json" "$fake/config.json.in"; cp "$fake/config.json.in" "$fake/config.json"
 PATH=$fake/bin:$PATH "$root/deploy/apply-branding.sh" "$fake/cfg" >"$fake/run1" 2>&1
 check "branding first run writes name, accent and both logos" \
-  bash -c 'jq -e ".appName==\"Gantt family\" and .accentColor==\"#3b82f6\" and .sessionDuration==\"60\"" "$1/put.json" >/dev/null && cmp -s "$1/logo-true" "$2" && cmp -s "$1/logo-false" "$2"' _ "$fake" "$b/logo.svg"
+  bash -c 'python3 -I -c "import json,sys; d=json.load(open(sys.argv[1])); sys.exit(0 if (d[\"appName\"],d[\"accentColor\"],d[\"sessionDuration\"])==(\"Gantt family\",\"#3b82f6\",\"60\") else 1)" "$1/put.json" && cmp -s "$1/logo-true" "$2" && cmp -s "$1/logo-false" "$2"' _ "$fake" "$b/logo.svg"
 : >"$fake/log"
 PATH=$fake/bin:$PATH "$root/deploy/apply-branding.sh" "$fake/cfg" >"$fake/run2" 2>&1
 check "branding second run writes nothing" bash -c '! grep -q -- "-X PUT" "$1" && [ ! -s "$2" ]' _ "$fake/log" "$fake/run2"
