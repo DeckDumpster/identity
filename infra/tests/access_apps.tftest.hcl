@@ -15,6 +15,15 @@ variables {
     service_precedence = 2
   }
   dumpstar_adopt = null
+
+  ssh = {
+    app_id             = "app-ssh"
+    allow_policy_id    = "pol-ssh-allow"
+    allow_precedence   = 1
+    service_policy_id  = ""
+    service_precedence = 2
+  }
+  ssh_adopt = null
 }
 
 run "dumpstar_on_its_group" {
@@ -70,3 +79,4 @@ run "dumpstar_adopted_keeps_emails" {
     error_message = "the service-token policy must stay attached"
   }
 }
+

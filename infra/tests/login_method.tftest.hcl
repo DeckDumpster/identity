@@ -15,6 +15,15 @@ variables {
     service_precedence = 2
   }
   dumpstar_adopt = null
+
+  ssh = {
+    app_id             = "app-ssh"
+    allow_policy_id    = "pol-ssh-allow"
+    allow_precedence   = 1
+    service_policy_id  = ""
+    service_precedence = 2
+  }
+  ssh_adopt = null
 }
 
 run "oidc_login_method_carries_groups" {
