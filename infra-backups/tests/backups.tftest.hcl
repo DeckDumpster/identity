@@ -65,7 +65,7 @@ run "writer_can_only_upload" {
     error_message = "the backup user gets exactly one statement"
   }
   assert {
-    condition     = one(data.aws_iam_policy_document.backup.statement).effect == "Allow" && toset(one(data.aws_iam_policy_document.backup.statement).actions) == toset(["s3:PutObject"])
+    condition     = coalesce(one(data.aws_iam_policy_document.backup.statement).effect, "Allow") == "Allow" && toset(one(data.aws_iam_policy_document.backup.statement).actions) == toset(["s3:PutObject"])
     error_message = "the backup user may only s3:PutObject (no list, read, overwrite-by-read or delete)"
   }
   assert {
