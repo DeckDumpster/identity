@@ -22,8 +22,8 @@ Merging does not deploy; the Concierge runs it from a production checkout on ubu
 - Secrets are 0600 files in `~/.config/identity/`, never in git. `pocket-id.env`
   (`ENCRYPTION_KEY`) is generated on first deploy and never replaced. `cloudflared-id.env`
   (`TUNNEL_TOKEN=<token>`) must be placed by hand first; deploy exits 3 without it.
-- The tunnel's public hostname `id.gantt.pub` -> `http://127.0.0.1:1411` is set on the tunnel
-  itself (it is remotely managed by the token). `id.gantt.pub` must **not** have a Cloudflare
+- The tunnel, its public hostname `id.gantt.pub` -> `http://127.0.0.1:1411` and the proxied DNS
+  CNAME are declared in `infra/tunnel.tf` (the tunnel is remotely managed by the token). `id.gantt.pub` must **not** have a Cloudflare
   Access application; `test-deploy.sh` fails if this repo declares one.
 - `deploy/render.sh <dir>` renders the units anywhere; `test-deploy.sh` checks the pins, the
   loopback bind and the host refusal (`testenv --suites test-deploy`).
@@ -49,14 +49,31 @@ and the userinfo response. Cloudflare matches the names exactly, so group names 
 `poke-users`, ...) must match the policies. A client may also be restricted to allowed user
 groups inside Pocket ID.
 
-<<<<<<< HEAD
 ## Apply (the Concierge, with an MFA session and a Cloudflare token)
 
-`infra/` registers Pocket ID as a Cloudflare Access generic OIDC login method (state key
+`infra/` declares Pocket ID's ingress (tunnel, hostname route, proxied CNAME, `tunnel_token`
+output) and registers it as a Cloudflare Access generic OIDC login method (state key
 `identity/infra/terraform.tfstate` in the shared state bucket). It outputs `login_method_id`
 for app policies. Checked by `testenv --suites test-infra` (fmt, validate, mocked-provider test:
 claims include `groups`, scopes are `openid email profile groups`, no secret in outputs).
 
+0. First stage, before Pocket ID exists. Needs the token plus Zone DNS edit and Cloudflare
+   Tunnel edit; `<zone>` is the gantt.pub zone id. Apply only the ingress, then place the token
+   on ubuntu-mini-0 without printing it, and deploy:
+
+       cd infra
+       terraform init -backend-config="bucket=<StateBucketName>" \
+         -backend-config="assume_role={role_arn=\"<DeployRoleArn>\"}"
+       terraform apply -var cloudflare_account_id=<id> -var cloudflare_zone_id=<zone> \
+         -var credentials_file=/dev/null \
+         -target=cloudflare_zero_trust_tunnel_cloudflared.identity \
+         -target=cloudflare_zero_trust_tunnel_cloudflared_config.identity \
+         -target=cloudflare_dns_record.identity
+       ( umask 077; printf 'TUNNEL_TOKEN=%s\n' "$(terraform output -raw tunnel_token)" \
+         | ssh ryangantt@ubuntu-mini-0 'cat > ~/.config/identity/cloudflared-id.env' )
+       # then on ubuntu-mini-0: deploy/deploy.sh
+
+   Then continue with step 1; later plans also pass `-var cloudflare_zone_id=<zone>`.
 1. In Pocket ID, create an OIDC client with redirect URL
    `https://<team>.cloudflareaccess.com/cdn-cgi/access/callback`. Put its id and secret in a
    0600 file, never in chat or git:
@@ -73,14 +90,14 @@ claims include `groups`, scopes are `openid email profile groups`, no secret in 
        terraform init -backend-config="bucket=<StateBucketName>" \
          -backend-config="assume_role={role_arn=\"<DeployRoleArn>\"}"
        terraform plan -out=identity.tfplan -var cloudflare_account_id=<id> \
+         -var cloudflare_zone_id=<zone> \
          -var credentials_file=$HOME/.config/identity/pocket-id-oidc.json
        terraform apply identity.tfplan
 
-   Expect `Plan: 1 to add, 0 to change, 0 to destroy`.
+   Expect `Plan: 1 to add, 0 to change, 0 to destroy` after the first stage.
 4. In Cloudflare Zero Trust, Settings > Authentication > Pocket ID > Test, and confirm a
    `groups` claim for Ryan. The client secret is stored in Terraform state (the provider
    requires it there); it is never an output.
-=======
 ## Monitoring
 
 `deploy/check-identity.sh` runs every minute (`identity-check.timer`, CPU-fenced) on ubuntu-mini-0.
@@ -89,4 +106,3 @@ once when `https://id.gantt.pub`, its `/.well-known/openid-configuration`, or th
 and once more when everything clears. Backup freshness is the mtime of
 `~/.local/state/identity/last-backup`, which the backup job (Litestream, bead 2) must `touch` after
 each successful upload; a missing or >36 h old stamp alarms. Tested by `test-check.sh`.
->>>>>>> 60c3117 (sp-khwi4f: identity check (site, OIDC discovery, backup age) with Pushover alarm, fenced timer and fixture test)
