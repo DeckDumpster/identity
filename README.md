@@ -186,3 +186,22 @@ never managed). Per app, with `-var import_existing=true`:
 service-token policy survives, per app (`testenv --suites test-infra`). The policy and
 application ids and the live shapes are read from the Cloudflare API by the Concierge; none are
 in git.
+
+## Sign-in branding
+
+Cloudflare's Access login page cannot be skipped, so it and Pocket ID are branded alike from
+`deploy/branding/` (`branding.json`: app name, header/footer text, accent, background and text
+colours; `logo.svg`).
+
+- Cloudflare: `infra/branding.tf` sets the organization's `login_design` from `branding.json`; its
+  logo is the one Pocket ID serves (`https://id.gantt.pub/api/application-images/logo`). The
+  organization already exists: apply with `import_existing=true` first, pass the current
+  `-var access_org_name=<team> -var access_auth_domain=<team>.cloudflareaccess.com`, and expect the plan to
+  change only `login_design`.
+- Pocket ID: `deploy/deploy.sh` runs `deploy/apply-branding.sh`, which sets the app name, accent
+  colour and the light and dark logos, writing only what differs. It needs an admin API key (Pocket
+  ID Settings > API keys) as one line in `~/.config/identity/pocket-id-api-key` (0600); without it
+  deploy says so and carries on. Apply the logo and name before the Cloudflare change, so the
+  logo URL resolves.
+- Screenshots of both screens before and after are taken by whoever applies this (they need the
+  live sign-in).

@@ -67,6 +67,14 @@ if [ "$changed" = 1 ]; then
   systemctl --user restart pocket-id.service cloudflared-id.service
 fi
 
+# Pocket ID's name, accent colour and logo come from deploy/branding/. Needs an admin API key
+# (pocket-id-api-key); without one it says so and the rest of the deploy stands.
+for _ in 1 2 3 4 5 6 7 8 9 10; do
+  curl -fsS -o /dev/null http://127.0.0.1:1411/healthz 2>/dev/null && break
+  sleep 3
+done
+"$here/apply-branding.sh" "$config_dir" || echo "deploy.sh: Pocket ID branding was not applied" >&2
+
 cat <<MSG
 
 Deployed. First admin login (for Ryan; mints a one-time code, run once):

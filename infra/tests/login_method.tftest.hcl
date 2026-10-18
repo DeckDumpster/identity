@@ -5,6 +5,8 @@ variables {
   cloudflare_account_id = "acct"
   cloudflare_zone_id    = "zone"
   import_existing       = false
+  access_org_name       = "family"
+  access_auth_domain    = "family.cloudflareaccess.com"
   credentials_file      = "tests/credentials.fixture.json"
 
   dumpstar = {
@@ -79,5 +81,26 @@ run "no_secret_in_outputs" {
   assert {
     condition     = length(regexall("fixture-client-secret", jsonencode(output.login_method_id))) == 0
     error_message = "the client secret must not appear in outputs"
+  }
+}
+
+run "access_login_page_is_branded" {
+  command = plan
+
+  assert {
+    condition     = cloudflare_zero_trust_organization.this.login_design.header_text == "Gantt family sign-in"
+    error_message = "login page header must read Gantt family sign-in"
+  }
+  assert {
+    condition     = cloudflare_zero_trust_organization.this.login_design.footer_text == "Sign in with your passkey"
+    error_message = "login page footer must come from branding.json"
+  }
+  assert {
+    condition     = cloudflare_zero_trust_organization.this.login_design.background_color == "#0f172a" && cloudflare_zero_trust_organization.this.login_design.text_color == "#f8fafc"
+    error_message = "login page colours must come from branding.json"
+  }
+  assert {
+    condition     = cloudflare_zero_trust_organization.this.login_design.logo_path == "https://id.gantt.pub/api/application-images/logo"
+    error_message = "login page logo must be the one Pocket ID serves"
   }
 }
