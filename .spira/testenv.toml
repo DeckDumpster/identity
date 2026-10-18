@@ -22,3 +22,4 @@ timeout = 120
 
 [tier.test-backup]
 argv = ["bash", "test-backup.sh"]
+timeout = 120

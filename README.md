@@ -105,7 +105,7 @@ claims include `groups`, scopes are `openid email profile groups`, no secret in 
 It alarms through Pushover (credentials in `~/.config/pkdump/alerts.env`, as the other services do)
 once when `https://id.gantt.pub`, its `/.well-known/openid-configuration`, or the backup goes bad,
 and once more when everything clears. Backup freshness is the mtime of
-`~/.local/state/identity/last-backup`, which the backup job (Litestream, bead 2) must `touch` after
+`~/.local/state/identity/last-backup`, which `deploy/backup.sh --upload` touches after
 each successful upload; a missing or >36 h old stamp alarms. Tested by `test-check.sh`.
 
 ## Break-glass runbook
@@ -139,3 +139,29 @@ the tailnet: `ssh ryangantt@ubuntu-mini-0`.
    the script. Tested against a mocked Cloudflare API by `test-breakglass.sh`.
    **Drill (the Concierge, on Cubby):** switch, sign in by PIN, revert, then `terraform plan`
    in the Cubby stack must show no changes; record it in the close note.
+
+## Backups and the restore drill
+
+Pocket ID's data (SQLite `pocket-id.db`, signing keys, uploads) is backed up off-box to
+`identity-backups`, a private, versioned, encrypted bucket in the CI account
+(`infra/`, Terraform, under the `terraform-deploy` boundary). The job's credential
+(`identity-backup`, secret `identity/backup`) can only `s3:PutObject`.
+
+- **Why not Litestream:** it must list and read its replica, which a write-only key cannot do
+  (`law-off-box-backups-are-private-and-write-only`). `deploy/backup.sh --upload`, run every 15
+  minutes by `identity-backup.timer` (CPUQuota 25%), takes a consistent `VACUUM INTO` snapshot plus
+  the other files under the data dir, and uploads them as one `identity-<UTC>.tar.gz` object.
+  Needs `sqlite3` and the AWS CLI on ubuntu-mini-0.
+- **Credential:** after Terraform apply, copy the secret's keys into `~/.config/identity/backup.env`
+  (0600) as `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_DEFAULT_REGION=us-west-2` and
+  `IDENTITY_BACKUP_BUCKET=identity-backups`. `deploy.sh` enables the timer only once the file exists.
+- **Restore drill** (operator identity, not the backup key):
+  `deploy/restore-drill.sh --newest [--boot]` fetches the newest backup, restores it to a scratch
+  directory and asserts its users, groups and memberships equal the live database's (a difference
+  since the last 15-minute snapshot reads as a mismatch; rerun). `--archive <file> --reference <dir>`
+  works offline; `--boot` also starts a scratch Pocket ID and waits for its healthcheck.
+- **`ENCRYPTION_KEY` is not in the backup.** Keep a copy of `~/.config/identity/pocket-id.env`
+  elsewhere; a restore without it cannot decrypt Pocket ID's stored keys.
+- **Deploying infra:** needs `identity` added to `TERRAFORM_NAME_PREFIXES` in ephemeral-ci's
+  `lib/terraform-bootstrap-stack.ts` and a redeploy of `TerraformBootstrap`, or the deploy role
+  refuses the bucket, user and secret. Tests: `testenv --suites test-infra,test-backup`.
