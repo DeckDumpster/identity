@@ -49,6 +49,7 @@ and the userinfo response. Cloudflare matches the names exactly, so group names 
 `poke-users`, ...) must match the policies. A client may also be restricted to allowed user
 groups inside Pocket ID.
 
+<<<<<<< HEAD
 ## Apply (the Concierge, with an MFA session and a Cloudflare token)
 
 `infra/` registers Pocket ID as a Cloudflare Access generic OIDC login method (state key
@@ -79,3 +80,13 @@ claims include `groups`, scopes are `openid email profile groups`, no secret in 
 4. In Cloudflare Zero Trust, Settings > Authentication > Pocket ID > Test, and confirm a
    `groups` claim for Ryan. The client secret is stored in Terraform state (the provider
    requires it there); it is never an output.
+=======
+## Monitoring
+
+`deploy/check-identity.sh` runs every minute (`identity-check.timer`, CPU-fenced) on ubuntu-mini-0.
+It alarms through Pushover (credentials in `~/.config/pkdump/alerts.env`, as the other services do)
+once when `https://id.gantt.pub`, its `/.well-known/openid-configuration`, or the backup goes bad,
+and once more when everything clears. Backup freshness is the mtime of
+`~/.local/state/identity/last-backup`, which the backup job (Litestream, bead 2) must `touch` after
+each successful upload; a missing or >36 h old stamp alarms. Tested by `test-check.sh`.
+>>>>>>> 60c3117 (sp-khwi4f: identity check (site, OIDC discovery, backup age) with Pushover alarm, fenced timer and fixture test)
