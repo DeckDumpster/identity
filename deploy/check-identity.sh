@@ -10,6 +10,8 @@
 # Backup freshness reads BACKUP_STAMP, a file whose mtime the backup job touches after every
 # successful replication/upload. A missing stamp is a problem, not a pass.
 #
+# It also alarms while any app is in break-glass (state files from deploy/breakglass.sh).
+#
 # Exit: 0 healthy, 1 unhealthy or could not alert.
 set -uo pipefail
 
@@ -19,6 +21,7 @@ MAX_BACKUP_AGE=${MAX_BACKUP_AGE:-129600} # 36 h
 STATE_DIR=${STATE_DIR:-${XDG_STATE_HOME:-$HOME/.local/state}/identity/check}
 ALERTS_ENV=${ALERTS_ENV:-$HOME/.config/pkdump/alerts.env}
 RETRY_DELAY=${RETRY_DELAY:-5}
+BREAKGLASS_DIR=${BREAKGLASS_DIR:-${XDG_STATE_HOME:-$HOME/.local/state}/identity/breakglass}
 PUSHOVER_API_URL=${PUSHOVER_API_URL:-https://api.pushover.net/1/messages.json}
 
 if [ -r "$ALERTS_ENV" ]; then
@@ -61,10 +64,19 @@ backup_problem() {
   fi
 }
 
+# deploy/breakglass.sh leaves one <app>.json here per Access app switched to one-time PIN.
+breakglass_problem() {
+  local f
+  for f in "$BREAKGLASS_DIR"/*.json; do
+    [ -e "$f" ] || continue
+    echo "BREAK-GLASS ACTIVE for $(basename "${f%.json}"): one-time PIN is on; run breakglass.sh --revert"
+  done
+}
+
 collect() {
   local tmp
   tmp=$(mktemp)
-  { site_problem "$tmp"; discovery_problem "$tmp"; backup_problem; } 2>&1
+  { site_problem "$tmp"; discovery_problem "$tmp"; backup_problem; breakglass_problem; } 2>&1
   rm -f "$tmp"
 }
 
