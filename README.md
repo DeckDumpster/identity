@@ -166,3 +166,23 @@ Pocket ID's data (SQLite `pocket-id.db`, signing keys, uploads) is backed up off
 - **Deploying infra:** needs `identity` added to `TERRAFORM_NAME_PREFIXES` in ephemeral-ci's
   `lib/terraform-bootstrap-stack.ts` and a redeploy of `TerraformBootstrap`, or the deploy role
   refuses the bucket, user and secret. Tests: `testenv --suites test-infra,test-backup`.
+
+## Access apps (dumpstar, ssh, poke, magic)
+
+`infra/access_<app>.tf` brings each existing Access application and its allow policy under
+Terraform through `infra/modules/access_app` (service-token policies are referenced by id,
+never managed). Per app, with `-var import_existing=true`:
+
+1. **Adopt:** set `<app>` to the live ids (app, allow policy, precedences, service-token policy
+   id or `""`) and `<app>_adopt` to today's emails, login methods and auto-redirect. The plan must
+   show `0 to change` (a diff is the live config differing from what you entered: fix the
+   variables, not the module).
+2. **Switch:** set `<app>_adopt = null`. The allow policy becomes the single rule `groups`
+   contains `<app>-users` via the Pocket ID login method, the app allows only that login method
+   with instant auth. Create the people in the Pocket ID group first; remove the old email rules
+   only after each app verifies. Once everything is in state, apply with `import_existing=false`.
+
+`terraform test` asserts the single group rule, the single login method and that the
+service-token policy survives, per app (`testenv --suites test-infra`). The policy and
+application ids and the live shapes are read from the Cloudflare API by the Concierge; none are
+in git.
