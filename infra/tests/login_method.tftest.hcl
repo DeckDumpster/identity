@@ -36,7 +36,7 @@ run "oidc_login_method_carries_groups" {
 }
 
 run "no_secret_in_outputs" {
-  command = plan
+  command = apply
 
   assert {
     condition     = length(regexall("fixture-client-secret", jsonencode(output.login_method_id))) == 0
