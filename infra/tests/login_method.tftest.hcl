@@ -5,6 +5,15 @@ variables {
   cloudflare_account_id = "acct"
   cloudflare_zone_id    = "zone"
   credentials_file      = "tests/credentials.fixture.json"
+
+  dumpstar = {
+    app_id             = "app-dumpstar"
+    allow_policy_id    = "pol-dumpstar-allow"
+    allow_precedence   = 1
+    service_policy_id  = "pol-dumpstar-service"
+    service_precedence = 2
+  }
+  dumpstar_adopt = null
 }
 
 run "oidc_login_method_carries_groups" {
