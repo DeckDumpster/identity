@@ -21,15 +21,15 @@ run "dumpstar_on_its_group" {
   command = plan
 
   assert {
-    condition     = length(module.dumpstar.allow_policy.include) == 1 && module.dumpstar.allow_policy.include[0].oidc.claim_name == "groups" && module.dumpstar.allow_policy.include[0].oidc.claim_value == "dumpstar-users"
+    condition     = length(module.dumpstar.allow_policy.include) == 1 && toset([for r in module.dumpstar.allow_policy.include : "${r.oidc.claim_name}=${r.oidc.claim_value}"]) == toset(["groups=dumpstar-users"])
     error_message = "dumpstar allow policy must be the single rule groups contains dumpstar-users"
   }
   assert {
-    condition     = module.dumpstar.allow_policy.include[0].oidc.identity_provider_id == cloudflare_zero_trust_access_identity_provider.pocket_id.id
+    condition     = toset([for r in module.dumpstar.allow_policy.include : r.oidc.identity_provider_id]) == toset([cloudflare_zero_trust_access_identity_provider.pocket_id.id])
     error_message = "the group rule must come from the Pocket ID login method"
   }
   assert {
-    condition     = length(module.dumpstar.application.allowed_idps) == 1 && module.dumpstar.application.allowed_idps[0] == cloudflare_zero_trust_access_identity_provider.pocket_id.id
+    condition     = toset(module.dumpstar.application.allowed_idps) == toset([cloudflare_zero_trust_access_identity_provider.pocket_id.id])
     error_message = "dumpstar must allow only the Pocket ID login method"
   }
   assert {
@@ -58,11 +58,11 @@ run "dumpstar_adopted_keeps_emails" {
   }
 
   assert {
-    condition     = module.dumpstar.allow_policy.include[0].email.email == "a@example.com" && length(module.dumpstar.allow_policy.include) == 1
+    condition     = length(module.dumpstar.allow_policy.include) == 1 && toset([for r in module.dumpstar.allow_policy.include : r.email.email]) == toset(["a@example.com"])
     error_message = "adoption keeps today's email rule"
   }
   assert {
-    condition     = module.dumpstar.application.allowed_idps == tolist(["idp-old"]) && module.dumpstar.application.auto_redirect_to_identity == false
+    condition     = toset(module.dumpstar.application.allowed_idps) == toset(["idp-old"]) && module.dumpstar.application.auto_redirect_to_identity == false
     error_message = "adoption keeps today's login methods"
   }
   assert {
