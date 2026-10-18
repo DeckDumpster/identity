@@ -1,0 +1,25 @@
+[Unit]
+Description=Pocket ID (id.gantt.pub)
+After=network-online.target
+Wants=network-online.target
+
+[Container]
+ContainerName=pocket-id
+Image=@POCKET_ID_IMAGE@
+AutoUpdate=none
+# Loopback only: the cloudflared tunnel is the sole way in.
+PublishPort=127.0.0.1:@PORT@:1411
+Volume=pocket-id-data.volume:/app/data
+# ENCRYPTION_KEY lives here (0600, generated on first deploy, never in git).
+EnvironmentFile=@CONFIG_DIR@/pocket-id.env
+Environment=APP_URL=https://id.gantt.pub
+Environment=TRUST_PROXY=true
+Environment=ANALYTICS_DISABLED=true
+HealthCmd=/app/pocket-id healthcheck
+HealthInterval=90s
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=default.target
