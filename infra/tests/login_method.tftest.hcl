@@ -16,6 +16,15 @@ variables {
   }
   dumpstar_adopt = null
 
+  magic = {
+    app_id             = "app-magic"
+    allow_policy_id    = "pol-magic-allow"
+    allow_precedence   = 1
+    service_policy_id  = "pol-magic-service"
+    service_precedence = 2
+  }
+  magic_adopt = null
+
   poke = {
     app_id             = "app-poke"
     allow_policy_id    = "pol-poke-allow"
