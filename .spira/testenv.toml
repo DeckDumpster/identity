@@ -2,8 +2,12 @@
 image = "docker.io/library/debian:bookworm-slim"
 workdir = "/work"
 timeout = 300
-default = ["test-deploy"]
+default = ["test-deploy", "test-infra"]
 
 [tier.test-deploy]
 argv = ["bash", "test-deploy.sh"]
 timeout = 120
+
+[tier.test-infra]
+argv = ["bash", "test-infra.sh"]
+timeout = 240
