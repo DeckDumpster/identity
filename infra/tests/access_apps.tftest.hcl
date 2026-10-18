@@ -6,6 +6,8 @@ variables {
   cloudflare_account_id = "acct"
   cloudflare_zone_id    = "zone"
   import_existing       = false
+  access_org_name       = "family"
+  access_auth_domain    = "family.cloudflareaccess.com"
   credentials_file      = "tests/credentials.fixture.json"
 
   dumpstar = {
