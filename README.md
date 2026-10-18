@@ -98,6 +98,7 @@ claims include `groups`, scopes are `openid email profile groups`, no secret in 
 4. In Cloudflare Zero Trust, Settings > Authentication > Pocket ID > Test, and confirm a
    `groups` claim for Ryan. The client secret is stored in Terraform state (the provider
    requires it there); it is never an output.
+
 ## Monitoring
 
 `deploy/check-identity.sh` runs every minute (`identity-check.timer`, CPU-fenced) on ubuntu-mini-0.
@@ -106,3 +107,35 @@ once when `https://id.gantt.pub`, its `/.well-known/openid-configuration`, or th
 and once more when everything clears. Backup freshness is the mtime of
 `~/.local/state/identity/last-backup`, which the backup job (Litestream, bead 2) must `touch` after
 each successful upload; a missing or >36 h old stamp alarms. Tested by `test-check.sh`.
+
+## Break-glass runbook
+
+Users never see Cloudflare's login page, so break-glass is a separate route, run by Ryan over
+the tailnet: `ssh ryangantt@ubuntu-mini-0`.
+
+1. **Lost passkey.** Mint a one-time login code and register a new passkey:
+
+       podman exec pocket-id /app/pocket-id one-time-access-token <username-or-email>
+
+2. **Pocket ID down.** `systemctl --user status pocket-id cloudflared-id`, then
+   `systemctl --user restart pocket-id cloudflared-id`. If the data is gone, restore from the
+   CI-account backup (the restore drill, bead 2). `identity-check` pages meanwhile.
+3. **Down and not quickly fixable.** Switch the one app that matters to Cloudflare one-time PIN
+   for `ryan@gantt.pub` only:
+
+       ~/.local/lib/identity/breakglass.sh <app>            # Access app name or domain, e.g. Cubby
+       # sign in at the app: the PIN is emailed to ryan@gantt.pub
+       ~/.local/lib/identity/breakglass.sh --revert <app>   # as soon as Pocket ID is back
+       ~/.local/lib/identity/breakglass.sh --status         # apps still in break-glass
+
+   It saves the app's current settings, replaces its login methods with one-time PIN and its
+   policies with one temporary allow rule for `ryan@gantt.pub`; `--revert` writes the saved
+   settings back byte-for-byte and deletes the rule, so `terraform plan` shows no drift.
+   While any app is in break-glass `identity-check` pages every state change (ALARM naming the
+   app, RECOVERED after the last revert).
+   The Cloudflare token lives in `~/.config/identity/cloudflare-breakglass.env` (mode 0600,
+   `CLOUDFLARE_API_TOKEN=...` with Access Apps/Policies edit and Identity Providers read, and
+   `CLOUDFLARE_ACCOUNT_ID=...`), placed by hand; the script refuses a looser mode. Deploy installs
+   the script. Tested against a mocked Cloudflare API by `test-breakglass.sh`.
+   **Drill (the Concierge, on Cubby):** switch, sign in by PIN, revert, then `terraform plan`
+   in the Cubby stack must show no changes; record it in the close note.

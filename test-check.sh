@@ -41,7 +41,7 @@ for _ in $(seq 50); do curl -s -o /dev/null "$base/" && break; sleep 0.1; done
 printf 'PUSHOVER_TOKEN=tok\nPUSHOVER_USER=usr\n' >"$t/alerts.env"
 touch "$t/stamp"
 run() {
-  ID_BASE=$base BACKUP_STAMP=$t/stamp STATE_DIR=$t/state ALERTS_ENV=${ALERTS_ENV:-$t/alerts.env} \
+  BREAKGLASS_DIR=$t/bg ID_BASE=$base BACKUP_STAMP=$t/stamp STATE_DIR=$t/state ALERTS_ENV=${ALERTS_ENV:-$t/alerts.env} \
     PUSHOVER_API_URL=$base/push RETRY_DELAY=0 "$root/deploy/check-identity.sh" >"$t/out" 2>&1
 }
 pushes() { grep -c . "$t/pushes"; }

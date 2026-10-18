@@ -51,6 +51,7 @@ if [ "$changed" = 1 ]; then
   systemctl --user daemon-reload
 fi
 install -m 755 "$here/check-identity.sh" "$lib_dir/check-identity.sh"
+install -m 755 "$here/breakglass.sh" "$lib_dir/breakglass.sh"
 systemctl --user enable --now identity-check.timer
 systemctl --user start pocket-id.service cloudflared-id.service
 if [ "$changed" = 1 ]; then
