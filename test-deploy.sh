@@ -26,7 +26,7 @@ check "secrets come from env files, not units" \
   bash -c 'grep -q "^EnvironmentFile=/cfg/pocket-id.env$" "$1" && grep -q "^EnvironmentFile=/cfg/cloudflared-id.env$" "$2" && ! grep -Eq "ENCRYPTION_KEY=|TUNNEL_TOKEN=" "$1" "$2"' _ "$pc" "$cf"
 check "no unrendered placeholders" bash -c '! grep -q "@[A-Z_]*@" "$@"' _ "$out"/units/*
 check "no Access app for id.gantt.pub in repo" \
-  bash -c '! grep -rIl "cloudflare_zero_trust_access_application" --exclude=test-deploy.sh "$1" | grep -q .' _ "$root"
+  bash -c '! grep -rIl "cloudflare_zero_trust_access_application" --exclude=test-deploy.sh --exclude=test-infra.sh "$1" | grep -q .' _ "$root"
 
 # Host refusal: skipped when run on the prod host itself.
 have=$(hostname -s); want=$(tr -d '[:space:]' <"$root/deploy/prod-host")
