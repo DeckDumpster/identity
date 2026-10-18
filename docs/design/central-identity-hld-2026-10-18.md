@@ -174,6 +174,14 @@ Cloudflare Access apps on the account (read through the API on 2026-10-18):
   (default taken).
 - **A new `identity` repo** (default taken).
 - **Break-glass kept, but on a separate route** (Ryan): never a second login method on the app.
+- **Apps sign users in themselves (native OIDC), dropping Access for human paths** (per Ryan,
+  2026-10-18, after the first sign-in still showed Cloudflare's interstitial: *"don't hesitate to
+  make the bigger OIDC change per app"*). Each app runs the OIDC authorization-code flow (PKCE)
+  against Pocket ID with its own client, checks the `groups` claim, and keeps its own session
+  cookie. The Access application for its human paths is then removed in Terraform. Service-token
+  paths keep an Access application, or move to app-level bearer tokens, so automation is unaffected.
+  `ssh.dumpster.cards` stays on Access, since SSH cannot do browser OIDC. The three dumpster sites
+  share the implementation through dumpster-kit.
 
 ## Open questions (all resolved 2026-10-18; kept for the record)
 
