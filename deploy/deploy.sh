@@ -54,6 +54,15 @@ install -m 755 "$here/check-identity.sh" "$lib_dir/check-identity.sh"
 install -m 755 "$here/breakglass.sh" "$lib_dir/breakglass.sh"
 systemctl --user enable --now identity-check.timer
 systemctl --user start pocket-id.service cloudflared-id.service
+# Backups: the write-only credential (from Secrets Manager identity/backup) is placed by hand in
+# backup.env as AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_DEFAULT_REGION and
+# IDENTITY_BACKUP_BUCKET. The timer is enabled only once it exists.
+if [ -s "$config_dir/backup.env" ]; then
+  chmod 600 "$config_dir/backup.env"
+  systemctl --user enable --now identity-backup.timer
+else
+  echo "deploy.sh: $config_dir/backup.env is missing; backups are NOT running (see README)" >&2
+fi
 if [ "$changed" = 1 ]; then
   systemctl --user restart pocket-id.service cloudflared-id.service
 fi

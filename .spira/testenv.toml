@@ -2,7 +2,7 @@
 image = "docker.io/library/buildpack-deps:bookworm"
 workdir = "/work"
 timeout = 300
-default = ["test-deploy", "test-infra", "test-check", "test-breakglass"]
+default = ["test-deploy", "test-infra", "test-check", "test-breakglass", "test-backup"]
 
 [tier.test-deploy]
 argv = ["bash", "test-deploy.sh"]
@@ -18,4 +18,8 @@ timeout = 120
 
 [tier.test-breakglass]
 argv = ["bash", "test-breakglass.sh"]
+timeout = 120
+
+[tier.test-backup]
+argv = ["bash", "test-backup.sh"]
 timeout = 120
