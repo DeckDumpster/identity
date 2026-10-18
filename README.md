@@ -140,11 +140,12 @@ the tailnet: `ssh ryangantt@ubuntu-mini-0`.
    **Drill (the Concierge, on Cubby):** switch, sign in by PIN, revert, then `terraform plan`
    in the Cubby stack must show no changes; record it in the close note.
 
+
 ## Backups and the restore drill
 
 Pocket ID's data (SQLite `pocket-id.db`, signing keys, uploads) is backed up off-box to
 `identity-backups`, a private, versioned, encrypted bucket in the CI account
-(`infra/`, Terraform, under the `terraform-deploy` boundary). The job's credential
+(`infra-backups/`, its own Terraform root and state key, under the `terraform-deploy` boundary). The job's credential
 (`identity-backup`, secret `identity/backup`) can only `s3:PutObject`.
 
 - **Why not Litestream:** it must list and read its replica, which a write-only key cannot do
