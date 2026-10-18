@@ -16,6 +16,15 @@ variables {
   }
   dumpstar_adopt = null
 
+  poke = {
+    app_id             = "app-poke"
+    allow_policy_id    = "pol-poke-allow"
+    allow_precedence   = 1
+    service_policy_id  = "pol-poke-service"
+    service_precedence = 2
+  }
+  poke_adopt = null
+
   ssh = {
     app_id             = "app-ssh"
     allow_policy_id    = "pol-ssh-allow"
