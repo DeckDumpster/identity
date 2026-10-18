@@ -45,8 +45,8 @@ echo "$*" >>"$FAKE_LOG"
 case "$*" in
   *application-configuration/all*) cat "$FAKE_STATE/config.json" ;;
   *"-X PUT"*"application-configuration"*) cat >"$FAKE_STATE/put.json"; jq -c '.' "$FAKE_STATE/put.json" >/dev/null && jq '[to_entries[] | {key, value}]' "$FAKE_STATE/put.json" >"$FAKE_STATE/config.json" ;;
-  *"-X PUT"*"application-images/logo?light="*) l=${*##*light=}; l=${l%% *}; cp "$FAKE_LOGO" "$FAKE_STATE/logo-$l" ;;
-  *application-images/logo?light=*) l=${*##*light=}; l=${l%%&*}; cat "$FAKE_STATE/logo-$l" 2>/dev/null ;;
+  *"-X PUT"*"application-images/logo?light="*) a="$*"; l=${a##*light=}; l=${l%% *}; cp "$FAKE_LOGO" "$FAKE_STATE/logo-$l" ;;
+  *application-images/logo?light=*) a="$*"; l=${a##*light=}; l=${l%%&*}; cat "$FAKE_STATE/logo-$l" 2>/dev/null ;;
 esac
 FAKE
 chmod +x "$fake/bin/curl"
