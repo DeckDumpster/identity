@@ -14,5 +14,6 @@ for tpl in "$here"/units/*.in; do
   sed -e "s|@POCKET_ID_IMAGE@|$POCKET_ID_IMAGE|g" \
       -e "s|@CLOUDFLARED_IMAGE@|$CLOUDFLARED_IMAGE|g" \
       -e "s|@CONFIG_DIR@|$config_dir|g" \
+      -e "s|@CHECK_BIN@|%h/.local/lib/identity/check-identity.sh|g" \
       -e "s|@PORT@|$port|g" "$tpl" >"$out/$name"
 done

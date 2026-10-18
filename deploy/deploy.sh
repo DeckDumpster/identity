@@ -16,7 +16,9 @@ fi
 
 config_dir=$HOME/.config/identity
 unit_dir=$HOME/.config/containers/systemd
-mkdir -p "$config_dir" "$unit_dir"
+sys_dir=$HOME/.config/systemd/user
+lib_dir=$HOME/.local/lib/identity
+mkdir -p "$config_dir" "$unit_dir" "$sys_dir" "$lib_dir"
 chmod 700 "$config_dir"
 
 # Pocket ID's encryption key: generated once, never replaced (replacing it orphans the data).
@@ -36,7 +38,10 @@ trap 'rm -rf "$tmp"' EXIT
 "$here/render.sh" "$tmp" "$config_dir"
 changed=0
 for f in "$tmp"/*; do
-  dest=$unit_dir/$(basename "$f")
+  case "$f" in
+    *.service|*.timer) dest=$sys_dir/$(basename "$f") ;;
+    *) dest=$unit_dir/$(basename "$f") ;;
+  esac
   if ! cmp -s "$f" "$dest"; then
     install -m 644 "$f" "$dest"
     changed=1
@@ -45,6 +50,8 @@ done
 if [ "$changed" = 1 ]; then
   systemctl --user daemon-reload
 fi
+install -m 755 "$here/check-identity.sh" "$lib_dir/check-identity.sh"
+systemctl --user enable --now identity-check.timer
 systemctl --user start pocket-id.service cloudflared-id.service
 if [ "$changed" = 1 ]; then
   systemctl --user restart pocket-id.service cloudflared-id.service
