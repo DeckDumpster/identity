@@ -29,3 +29,20 @@ variable "claims" {
   default     = ["groups"]
   description = "Extra OIDC claims Cloudflare keeps for policies; exact group names are matched."
 }
+
+variable "cloudflare_zone_id" {
+  type        = string
+  description = "Zone id of gantt.pub."
+}
+
+variable "hostname" {
+  type        = string
+  default     = "id.gantt.pub"
+  description = "Public hostname of Pocket ID."
+}
+
+variable "origin" {
+  type        = string
+  default     = "http://127.0.0.1:1411"
+  description = "Where cloudflared reaches Pocket ID on ubuntu-mini-0."
+}
