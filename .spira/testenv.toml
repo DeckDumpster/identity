@@ -1,0 +1,9 @@
+# Declares the identity repo's suites to testenv. Shell only; a plain Debian image suffices.
+image = "docker.io/library/debian:bookworm-slim"
+workdir = "/work"
+timeout = 300
+default = ["test-deploy"]
+
+[tier.test-deploy]
+argv = ["bash", "test-deploy.sh"]
+timeout = 120
