@@ -4,6 +4,7 @@ mock_provider "cloudflare" {}
 
 variables {
   cloudflare_account_id = "acct"
+  cloudflare_zone_id    = "zone"
   import_existing       = false
   credentials_file      = "tests/credentials.fixture.json"
 

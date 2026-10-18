@@ -4,7 +4,44 @@ mock_provider "cloudflare" {}
 variables {
   cloudflare_account_id = "acct"
   cloudflare_zone_id    = "zone"
+  import_existing       = false
   credentials_file      = "tests/credentials.fixture.json"
+
+  dumpstar = {
+    app_id             = "app-dumpstar"
+    allow_policy_id    = "pol-dumpstar-allow"
+    allow_precedence   = 1
+    service_policy_id  = "pol-dumpstar-service"
+    service_precedence = 2
+  }
+  dumpstar_adopt = null
+
+  magic = {
+    app_id             = "app-magic"
+    allow_policy_id    = "pol-magic-allow"
+    allow_precedence   = 1
+    service_policy_id  = "pol-magic-service"
+    service_precedence = 2
+  }
+  magic_adopt = null
+
+  poke = {
+    app_id             = "app-poke"
+    allow_policy_id    = "pol-poke-allow"
+    allow_precedence   = 1
+    service_policy_id  = "pol-poke-service"
+    service_precedence = 2
+  }
+  poke_adopt = null
+
+  ssh = {
+    app_id             = "app-ssh"
+    allow_policy_id    = "pol-ssh-allow"
+    allow_precedence   = 1
+    service_policy_id  = ""
+    service_precedence = 2
+  }
+  ssh_adopt = null
 }
 
 run "tunnel_routes_the_hostname_to_pocket_id" {
