@@ -18,7 +18,7 @@ variables {
 }
 
 run "dumpstar_on_its_group" {
-  command = plan
+  command = apply
 
   assert {
     condition     = length(module.dumpstar.allow_policy.include) == 1 && toset([for r in module.dumpstar.allow_policy.include : "${r.oidc.claim_name}=${r.oidc.claim_value}"]) == toset(["groups=dumpstar-users"])
@@ -47,7 +47,7 @@ run "dumpstar_on_its_group" {
 }
 
 run "dumpstar_adopted_keeps_emails" {
-  command = plan
+  command = apply
 
   variables {
     dumpstar_adopt = {
