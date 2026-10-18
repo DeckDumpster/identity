@@ -1,0 +1,11 @@
+[Unit]
+Description=Back up Pocket ID data to the CI-account bucket
+
+[Service]
+Type=oneshot
+EnvironmentFile=@CONFIG_DIR@/backup.env
+ExecStart=@REPO@/deploy/backup.sh --upload
+# A read-only convenience job must not starve production (law-fence-loops-on-shared-hardware).
+CPUQuota=25%
+Nice=10
+TimeoutStartSec=300

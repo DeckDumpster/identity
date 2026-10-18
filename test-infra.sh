@@ -19,3 +19,11 @@ terraform validate
 terraform test
 # No Access application may cover id.gantt.pub (it would gate the OIDC endpoints Cloudflare itself calls).
 ! grep -rIn "cloudflare_zero_trust_access_application" --include='*.tf' . || { echo "infra/ must not declare an Access application" >&2; exit 1; }
+# The backups root is a separate Terraform root (own state key, AWS only).
+(
+  cd "$root/infra-backups"
+  terraform fmt -check -recursive
+  { terraform init -backend=false -input=false || { sleep 5; terraform init -backend=false -input=false; }; }
+  terraform validate
+  terraform test
+)
