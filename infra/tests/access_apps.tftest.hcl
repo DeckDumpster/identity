@@ -81,10 +81,12 @@ run "dumpstar_adopted_keeps_emails" {
 
   variables {
     dumpstar_adopt = {
-      policy_name   = "dumpstar-allowed-emails"
-      emails        = ["a@example.com"]
-      allowed_idps  = ["idp-old"]
-      auto_redirect = false
+      policy_name                = "dumpstar-allowed-emails"
+      emails                     = ["a@example.com"]
+      allowed_idps               = ["idp-old"]
+      auto_redirect              = false
+      session_duration           = "168h"
+      http_only_cookie_attribute = false
     }
   }
 
@@ -99,6 +101,10 @@ run "dumpstar_adopted_keeps_emails" {
   assert {
     condition     = toset(module.dumpstar.application.allowed_idps) == toset(["idp-old"]) && module.dumpstar.application.auto_redirect_to_identity == false
     error_message = "adoption keeps today's login methods"
+  }
+  assert {
+    condition     = module.dumpstar.application.session_duration == "168h" && module.dumpstar.application.http_only_cookie_attribute == false
+    error_message = "adoption keeps the live session duration and cookie attribute"
   }
   assert {
     condition     = contains([for p in module.dumpstar.application.policies : p.id], "pol-dumpstar-service")
@@ -143,10 +149,12 @@ run "ssh_adopted_keeps_emails" {
 
   variables {
     ssh_adopt = {
-      policy_name   = "only-my-email"
-      emails        = ["a@example.com"]
-      allowed_idps  = ["idp-old"]
-      auto_redirect = false
+      policy_name                = "only-my-email"
+      emails                     = ["a@example.com"]
+      allowed_idps               = ["idp-old"]
+      auto_redirect              = false
+      session_duration           = "168h"
+      http_only_cookie_attribute = false
     }
   }
 
@@ -161,6 +169,10 @@ run "ssh_adopted_keeps_emails" {
   assert {
     condition     = toset(module.ssh.application.allowed_idps) == toset(["idp-old"]) && module.ssh.application.auto_redirect_to_identity == false
     error_message = "adoption keeps today's login methods"
+  }
+  assert {
+    condition     = module.ssh.application.session_duration == "168h" && module.ssh.application.http_only_cookie_attribute == false
+    error_message = "adoption keeps the live session duration and cookie attribute"
   }
   assert {
     condition     = length(module.ssh.application.policies) == 1
@@ -205,10 +217,12 @@ run "poke_adopted_keeps_emails" {
 
   variables {
     poke_adopt = {
-      policy_name   = "poke-dumpster-allowed-emails"
-      emails        = ["a@example.com"]
-      allowed_idps  = ["idp-old"]
-      auto_redirect = false
+      policy_name                = "poke-dumpster-allowed-emails"
+      emails                     = ["a@example.com"]
+      allowed_idps               = ["idp-old"]
+      auto_redirect              = false
+      session_duration           = "168h"
+      http_only_cookie_attribute = false
     }
   }
 
@@ -223,6 +237,10 @@ run "poke_adopted_keeps_emails" {
   assert {
     condition     = toset(module.poke.application.allowed_idps) == toset(["idp-old"]) && module.poke.application.auto_redirect_to_identity == false
     error_message = "adoption keeps today's login methods"
+  }
+  assert {
+    condition     = module.poke.application.session_duration == "168h" && module.poke.application.http_only_cookie_attribute == false
+    error_message = "adoption keeps the live session duration and cookie attribute"
   }
   assert {
     condition     = contains([for p in module.poke.application.policies : p.id], "pol-poke-service")
@@ -267,10 +285,12 @@ run "magic_adopted_keeps_emails" {
 
   variables {
     magic_adopt = {
-      policy_name   = "deck-dumpster-allowed-emails"
-      emails        = ["a@example.com"]
-      allowed_idps  = ["idp-old"]
-      auto_redirect = false
+      policy_name                = "deck-dumpster-allowed-emails"
+      emails                     = ["a@example.com"]
+      allowed_idps               = ["idp-old"]
+      auto_redirect              = false
+      session_duration           = "168h"
+      http_only_cookie_attribute = false
     }
   }
 
@@ -285,6 +305,10 @@ run "magic_adopted_keeps_emails" {
   assert {
     condition     = toset(module.magic.application.allowed_idps) == toset(["idp-old"]) && module.magic.application.auto_redirect_to_identity == false
     error_message = "adoption keeps today's login methods"
+  }
+  assert {
+    condition     = module.magic.application.session_duration == "168h" && module.magic.application.http_only_cookie_attribute == false
+    error_message = "adoption keeps the live session duration and cookie attribute"
   }
   assert {
     condition     = contains([for p in module.magic.application.policies : p.id], "pol-magic-service")

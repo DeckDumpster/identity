@@ -11,10 +11,12 @@ variable "ssh" {
 
 variable "ssh_adopt" {
   type = object({
-    policy_name   = string
-    emails        = list(string)
-    allowed_idps  = list(string)
-    auto_redirect = bool
+    policy_name                = string
+    emails                     = list(string)
+    allowed_idps               = list(string)
+    auto_redirect              = bool
+    session_duration           = string
+    http_only_cookie_attribute = bool
   })
   nullable    = true
   description = "Null: ssh is on its group. Otherwise today's email rule and login methods, for the zero-change adoption plan."
