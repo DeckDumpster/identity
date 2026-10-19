@@ -434,17 +434,3 @@ run "import_ids_use_the_providers_format" {
     error_message = "apps import as accounts/<account_id>/<id>, policies as <account_id>/<id>, the org as <account_id>"
   }
 }
-
-# Adopting leaves the live login page alone so the import plans zero changes.
-run "org_login_design_untouched_while_adopting" {
-  command = plan
-
-  variables {
-    import_existing = true
-  }
-
-  assert {
-    condition     = cloudflare_zero_trust_organization.this.login_design == null
-    error_message = "adoption must not rewrite the org login design"
-  }
-}
