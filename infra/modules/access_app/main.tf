@@ -30,8 +30,10 @@ resource "cloudflare_zero_trust_access_application" "this" {
   domain     = local.app_domain
   type       = "self_hosted"
 
-  allowed_idps              = local.switched ? [var.login_method_id] : var.adopt.allowed_idps
-  auto_redirect_to_identity = local.switched ? true : var.adopt.auto_redirect
+  allowed_idps               = local.switched ? [var.login_method_id] : var.adopt.allowed_idps
+  auto_redirect_to_identity  = local.switched ? true : var.adopt.auto_redirect
+  session_duration           = local.switched ? "24h" : var.adopt.session_duration
+  http_only_cookie_attribute = local.switched ? true : var.adopt.http_only_cookie_attribute
 
   policies = concat(
     local.keep_allow ? [{ id = cloudflare_zero_trust_access_policy.allow[0].id, precedence = var.ids.allow_precedence }] : [],

@@ -33,10 +33,12 @@ variable "ids" {
 
 variable "adopt" {
   type = object({
-    policy_name   = string
-    emails        = list(string)
-    allowed_idps  = list(string)
-    auto_redirect = bool
+    policy_name                = string
+    emails                     = list(string)
+    allowed_idps               = list(string)
+    auto_redirect              = bool
+    session_duration           = string
+    http_only_cookie_attribute = bool
   })
   nullable    = true
   description = "Null switches the app to its group. Otherwise the allow policy keeps today's name and email rule and the app keeps today's login methods, so the import plans zero changes."
