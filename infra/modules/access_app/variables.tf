@@ -33,12 +33,13 @@ variable "ids" {
 
 variable "adopt" {
   type = object({
+    policy_name   = string
     emails        = list(string)
     allowed_idps  = list(string)
     auto_redirect = bool
   })
   nullable    = true
-  description = "Null switches the app to its group. Otherwise the allow policy keeps today's email rule and the app keeps today's login methods, so the import plans zero changes."
+  description = "Null switches the app to its group. Otherwise the allow policy keeps today's name and email rule and the app keeps today's login methods, so the import plans zero changes."
 }
 
 variable "human_access" {

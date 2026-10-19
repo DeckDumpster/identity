@@ -11,6 +11,7 @@ variable "ssh" {
 
 variable "ssh_adopt" {
   type = object({
+    policy_name   = string
     emails        = list(string)
     allowed_idps  = list(string)
     auto_redirect = bool

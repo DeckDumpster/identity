@@ -81,6 +81,7 @@ run "dumpstar_adopted_keeps_emails" {
 
   variables {
     dumpstar_adopt = {
+      policy_name   = "dumpstar-allowed-emails"
       emails        = ["a@example.com"]
       allowed_idps  = ["idp-old"]
       auto_redirect = false
@@ -90,6 +91,10 @@ run "dumpstar_adopted_keeps_emails" {
   assert {
     condition     = length(module.dumpstar.allow_policy.include) == 1 && toset([for r in module.dumpstar.allow_policy.include : r.email.email]) == toset(["a@example.com"])
     error_message = "adoption keeps today's email rule"
+  }
+  assert {
+    condition     = module.dumpstar.allow_policy.name != "dumpstar-allow"
+    error_message = "adoption keeps the live policy name"
   }
   assert {
     condition     = toset(module.dumpstar.application.allowed_idps) == toset(["idp-old"]) && module.dumpstar.application.auto_redirect_to_identity == false
@@ -138,6 +143,7 @@ run "ssh_adopted_keeps_emails" {
 
   variables {
     ssh_adopt = {
+      policy_name   = "only-my-email"
       emails        = ["a@example.com"]
       allowed_idps  = ["idp-old"]
       auto_redirect = false
@@ -147,6 +153,10 @@ run "ssh_adopted_keeps_emails" {
   assert {
     condition     = length(module.ssh.allow_policy.include) == 1 && toset([for r in module.ssh.allow_policy.include : r.email.email]) == toset(["a@example.com"])
     error_message = "adoption keeps today's email rule"
+  }
+  assert {
+    condition     = module.ssh.allow_policy.name != "ssh-allow"
+    error_message = "adoption keeps the live policy name"
   }
   assert {
     condition     = toset(module.ssh.application.allowed_idps) == toset(["idp-old"]) && module.ssh.application.auto_redirect_to_identity == false
@@ -195,6 +205,7 @@ run "poke_adopted_keeps_emails" {
 
   variables {
     poke_adopt = {
+      policy_name   = "poke-dumpster-allowed-emails"
       emails        = ["a@example.com"]
       allowed_idps  = ["idp-old"]
       auto_redirect = false
@@ -204,6 +215,10 @@ run "poke_adopted_keeps_emails" {
   assert {
     condition     = length(module.poke.allow_policy.include) == 1 && toset([for r in module.poke.allow_policy.include : r.email.email]) == toset(["a@example.com"])
     error_message = "adoption keeps today's email rule"
+  }
+  assert {
+    condition     = module.poke.allow_policy.name != "poke-allow"
+    error_message = "adoption keeps the live policy name"
   }
   assert {
     condition     = toset(module.poke.application.allowed_idps) == toset(["idp-old"]) && module.poke.application.auto_redirect_to_identity == false
@@ -252,6 +267,7 @@ run "magic_adopted_keeps_emails" {
 
   variables {
     magic_adopt = {
+      policy_name   = "deck-dumpster-allowed-emails"
       emails        = ["a@example.com"]
       allowed_idps  = ["idp-old"]
       auto_redirect = false
@@ -261,6 +277,10 @@ run "magic_adopted_keeps_emails" {
   assert {
     condition     = length(module.magic.allow_policy.include) == 1 && toset([for r in module.magic.allow_policy.include : r.email.email]) == toset(["a@example.com"])
     error_message = "adoption keeps today's email rule"
+  }
+  assert {
+    condition     = module.magic.allow_policy.name != "magic-allow"
+    error_message = "adoption keeps the live policy name"
   }
   assert {
     condition     = toset(module.magic.application.allowed_idps) == toset(["idp-old"]) && module.magic.application.auto_redirect_to_identity == false
@@ -395,22 +415,36 @@ run "ssh_keeps_group_policy_when_apps_are_native" {
   }
 }
 
-# The provider rejects "<account_id>/<id>"; every import ID is "accounts/<account_id>/<id>".
+# The provider rejects "<account_id>/<id>"; apps take accounts/<account_id>/<id>, policies <account_id>/<id>, the org <account_id>.
 run "import_ids_use_the_providers_format" {
   command = plan
 
   assert {
     condition = local.import_ids == {
-      org             = "accounts/acct"
+      org             = "acct"
       dumpstar_app    = "accounts/acct/app-dumpstar"
-      dumpstar_policy = "accounts/acct/pol-dumpstar-allow"
+      dumpstar_policy = "acct/pol-dumpstar-allow"
       magic_app       = "accounts/acct/app-magic"
-      magic_policy    = "accounts/acct/pol-magic-allow"
+      magic_policy    = "acct/pol-magic-allow"
       poke_app        = "accounts/acct/app-poke"
-      poke_policy     = "accounts/acct/pol-poke-allow"
+      poke_policy     = "acct/pol-poke-allow"
       ssh_app         = "accounts/acct/app-ssh"
-      ssh_policy      = "accounts/acct/pol-ssh-allow"
+      ssh_policy      = "acct/pol-ssh-allow"
     }
-    error_message = "import IDs must be accounts/<account_id>/<id>, the org accounts/<account_id>"
+    error_message = "apps import as accounts/<account_id>/<id>, policies as <account_id>/<id>, the org as <account_id>"
+  }
+}
+
+# Adopting leaves the live login page alone so the import plans zero changes.
+run "org_login_design_untouched_while_adopting" {
+  command = plan
+
+  variables {
+    import_existing = true
+  }
+
+  assert {
+    condition     = cloudflare_zero_trust_organization.this.login_design == null
+    error_message = "adoption must not rewrite the org login design"
   }
 }

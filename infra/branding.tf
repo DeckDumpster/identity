@@ -22,7 +22,9 @@ resource "cloudflare_zero_trust_organization" "this" {
   name        = var.access_org_name
   auth_domain = var.access_auth_domain
 
-  login_design = {
+  # While adopting, the live login page is left as it is so the import plans zero changes; the
+  # branding applies on the first run after import_existing goes false.
+  login_design = var.import_existing ? null : {
     logo_path        = "${var.issuer}/api/application-images/logo"
     header_text      = local.branding.header_text
     footer_text      = local.branding.footer_text
