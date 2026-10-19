@@ -19,6 +19,18 @@ variable "magic_adopt" {
   description = "Null: magic is on its group. Otherwise today's email rule and login methods, for the zero-change adoption plan."
 }
 
+variable "magic_human_access" {
+  type        = string
+  default     = "group"
+  description = "group, service_only or removed: set once magic signs users in natively against Pocket ID and is verified. See modules/access_app."
+}
+
+variable "magic_narrow_domain" {
+  type        = string
+  default     = ""
+  description = "Hostname and path of the narrow service-token application when magic_human_access is service_only."
+}
+
 module "magic" {
   source = "./modules/access_app"
 
@@ -29,16 +41,18 @@ module "magic" {
   login_method_id = cloudflare_zero_trust_access_identity_provider.pocket_id.id
   ids             = var.magic
   adopt           = var.magic_adopt
+  human_access    = var.magic_human_access
+  narrow_domain   = var.magic_narrow_domain
 }
 
 import {
-  for_each = var.import_existing ? toset(["magic"]) : toset([])
-  to       = module.magic.cloudflare_zero_trust_access_application.this
+  for_each = var.import_existing && var.magic_human_access != "removed" ? toset(["magic"]) : toset([])
+  to       = module.magic.cloudflare_zero_trust_access_application.this[0]
   id       = "${var.cloudflare_account_id}/${var.magic.app_id}"
 }
 
 import {
-  for_each = var.import_existing ? toset(["magic"]) : toset([])
-  to       = module.magic.cloudflare_zero_trust_access_policy.allow
+  for_each = var.import_existing && var.magic_human_access == "group" ? toset(["magic"]) : toset([])
+  to       = module.magic.cloudflare_zero_trust_access_policy.allow[0]
   id       = "${var.cloudflare_account_id}/${var.magic.allow_policy_id}"
 }
