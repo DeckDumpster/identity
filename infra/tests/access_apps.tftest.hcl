@@ -274,3 +274,123 @@ run "magic_adopted_keeps_emails" {
 
 
 
+
+run "dumpstar_native_service_only" {
+  command = apply
+
+  variables {
+    dumpstar_human_access  = "service_only"
+    dumpstar_narrow_domain = "star.dumpster.cards/api"
+  }
+
+  assert {
+    condition     = module.dumpstar.allow_policy == null
+    error_message = "dumpstar signs in natively: no human allow policy"
+  }
+  assert {
+    condition     = [for p in module.dumpstar.application.policies : p.id] == ["pol-dumpstar-service"]
+    error_message = "only the dumpstar service-token policy stays attached"
+  }
+  assert {
+    condition     = module.dumpstar.application.domain == "star.dumpster.cards/api"
+    error_message = "the narrow dumpstar application covers only the service-token path"
+  }
+}
+
+run "dumpstar_native_removed" {
+  command = apply
+
+  variables {
+    dumpstar_human_access = "removed"
+  }
+
+  assert {
+    condition     = module.dumpstar.application == null && module.dumpstar.allow_policy == null
+    error_message = "dumpstar signs in natively: no Access application"
+  }
+}
+
+run "poke_native_service_only" {
+  command = apply
+
+  variables {
+    poke_human_access  = "service_only"
+    poke_narrow_domain = "poke.dumpster.cards/api"
+  }
+
+  assert {
+    condition     = module.poke.allow_policy == null
+    error_message = "poke signs in natively: no human allow policy"
+  }
+  assert {
+    condition     = [for p in module.poke.application.policies : p.id] == ["pol-poke-service"]
+    error_message = "only the poke service-token policy stays attached"
+  }
+  assert {
+    condition     = module.poke.application.domain == "poke.dumpster.cards/api"
+    error_message = "the narrow poke application covers only the service-token path"
+  }
+}
+
+run "poke_native_removed" {
+  command = apply
+
+  variables {
+    poke_human_access = "removed"
+  }
+
+  assert {
+    condition     = module.poke.application == null && module.poke.allow_policy == null
+    error_message = "poke signs in natively: no Access application"
+  }
+}
+
+run "magic_native_service_only" {
+  command = apply
+
+  variables {
+    magic_human_access  = "service_only"
+    magic_narrow_domain = "magic.dumpster.cards/api"
+  }
+
+  assert {
+    condition     = module.magic.allow_policy == null
+    error_message = "magic signs in natively: no human allow policy"
+  }
+  assert {
+    condition     = [for p in module.magic.application.policies : p.id] == ["pol-magic-service"]
+    error_message = "only the magic service-token policy stays attached"
+  }
+  assert {
+    condition     = module.magic.application.domain == "magic.dumpster.cards/api"
+    error_message = "the narrow magic application covers only the service-token path"
+  }
+}
+
+run "magic_native_removed" {
+  command = apply
+
+  variables {
+    magic_human_access = "removed"
+  }
+
+  assert {
+    condition     = module.magic.application == null && module.magic.allow_policy == null
+    error_message = "magic signs in natively: no Access application"
+  }
+}
+
+run "ssh_keeps_group_policy_when_apps_are_native" {
+  command = apply
+
+  variables {
+    dumpstar_human_access = "removed"
+    poke_human_access     = "removed"
+    magic_human_access    = "removed"
+  }
+
+  assert {
+    condition     = toset([for r in module.ssh.allow_policy.include : r.oidc.claim_value]) == toset(["ssh-users"]) && module.ssh.application.domain == "ssh.dumpster.cards"
+    error_message = "ssh stays on Access with its group policy"
+  }
+}

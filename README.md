@@ -167,6 +167,21 @@ Pocket ID's data (SQLite `pocket-id.db`, signing keys, uploads) is backed up off
   `lib/terraform-bootstrap-stack.ts` and a redeploy of `TerraformBootstrap`, or the deploy role
   refuses the bucket, user and secret. Tests: `testenv --suites test-infra,test-backup`.
 
+## Retiring an app's Access application (dumpstar, poke, magic)
+
+Once an app signs users in itself against Pocket ID and has been verified doing so, set
+`<app>_human_access` (default `group`, i.e. unchanged) and apply, one app and one commit at a time,
+never before the app is verified:
+
+- `removed`: the app's Access application and allow policy are destroyed.
+- `service_only`: the allow policy goes and only the service-token policy stays, on
+  `<app>_narrow_domain` (hostname plus path) when set. Use this where the app chose to keep a
+  service-token path; it needs an existing service-token policy.
+
+`ssh` has no such switch: it stays on Access with the Pocket ID login method and group `ssh-users`.
+cubby-parent's Access application lives in the cubby repo's infra and is retired there.
+`terraform test` covers both modes per app and that ssh keeps its group policy.
+
 ## Access apps (dumpstar, ssh, poke, magic)
 
 `infra/access_<app>.tf` brings each existing Access application and its allow policy under
