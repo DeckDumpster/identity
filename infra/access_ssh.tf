@@ -34,11 +34,11 @@ module "ssh" {
 import {
   for_each = var.import_existing ? toset(["ssh"]) : toset([])
   to       = module.ssh.cloudflare_zero_trust_access_application.this[0]
-  id       = "${var.cloudflare_account_id}/${var.ssh.app_id}"
+  id       = local.import_ids.ssh_app
 }
 
 import {
   for_each = var.import_existing ? toset(["ssh"]) : toset([])
   to       = module.ssh.cloudflare_zero_trust_access_policy.allow[0]
-  id       = "${var.cloudflare_account_id}/${var.ssh.allow_policy_id}"
+  id       = local.import_ids.ssh_policy
 }

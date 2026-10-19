@@ -48,11 +48,11 @@ module "dumpstar" {
 import {
   for_each = var.import_existing && var.dumpstar_human_access != "removed" ? toset(["dumpstar"]) : toset([])
   to       = module.dumpstar.cloudflare_zero_trust_access_application.this[0]
-  id       = "${var.cloudflare_account_id}/${var.dumpstar.app_id}"
+  id       = local.import_ids.dumpstar_app
 }
 
 import {
   for_each = var.import_existing && var.dumpstar_human_access == "group" ? toset(["dumpstar"]) : toset([])
   to       = module.dumpstar.cloudflare_zero_trust_access_policy.allow[0]
-  id       = "${var.cloudflare_account_id}/${var.dumpstar.allow_policy_id}"
+  id       = local.import_ids.dumpstar_policy
 }

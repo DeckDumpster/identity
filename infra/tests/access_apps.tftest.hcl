@@ -394,3 +394,23 @@ run "ssh_keeps_group_policy_when_apps_are_native" {
     error_message = "ssh stays on Access with its group policy"
   }
 }
+
+# The provider rejects "<account_id>/<id>"; every import ID is "accounts/<account_id>/<id>".
+run "import_ids_use_the_providers_format" {
+  command = plan
+
+  assert {
+    condition = local.import_ids == {
+      org             = "accounts/acct"
+      dumpstar_app    = "accounts/acct/app-dumpstar"
+      dumpstar_policy = "accounts/acct/pol-dumpstar-allow"
+      magic_app       = "accounts/acct/app-magic"
+      magic_policy    = "accounts/acct/pol-magic-allow"
+      poke_app        = "accounts/acct/app-poke"
+      poke_policy     = "accounts/acct/pol-poke-allow"
+      ssh_app         = "accounts/acct/app-ssh"
+      ssh_policy      = "accounts/acct/pol-ssh-allow"
+    }
+    error_message = "import IDs must be accounts/<account_id>/<id>, the org accounts/<account_id>"
+  }
+}
