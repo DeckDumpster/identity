@@ -34,5 +34,5 @@ resource "cloudflare_zero_trust_organization" "this" {
 import {
   for_each = var.import_existing ? toset(["org"]) : toset([])
   to       = cloudflare_zero_trust_organization.this
-  id       = var.cloudflare_account_id
+  id       = local.import_ids.org
 }

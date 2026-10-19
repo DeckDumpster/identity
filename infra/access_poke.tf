@@ -48,11 +48,11 @@ module "poke" {
 import {
   for_each = var.import_existing && var.poke_human_access != "removed" ? toset(["poke"]) : toset([])
   to       = module.poke.cloudflare_zero_trust_access_application.this[0]
-  id       = "${var.cloudflare_account_id}/${var.poke.app_id}"
+  id       = local.import_ids.poke_app
 }
 
 import {
   for_each = var.import_existing && var.poke_human_access == "group" ? toset(["poke"]) : toset([])
   to       = module.poke.cloudflare_zero_trust_access_policy.allow[0]
-  id       = "${var.cloudflare_account_id}/${var.poke.allow_policy_id}"
+  id       = local.import_ids.poke_policy
 }

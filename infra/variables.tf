@@ -51,3 +51,20 @@ variable "import_existing" {
   type        = bool
   description = "True while adopting the existing Access apps and policies (import blocks active). False once they are in state; the mocked-provider tests cannot import."
 }
+
+locals {
+  # The provider's import ID for an account-scoped resource is "accounts/<account_id>/<id>"; the bare
+  # "<account_id>/<id>" is rejected as an invalid ID. The organization's ID is "accounts/<account_id>".
+  account_scope = "accounts/${var.cloudflare_account_id}"
+  import_ids = {
+    org             = local.account_scope
+    dumpstar_app    = "${local.account_scope}/${var.dumpstar.app_id}"
+    dumpstar_policy = "${local.account_scope}/${var.dumpstar.allow_policy_id}"
+    magic_app       = "${local.account_scope}/${var.magic.app_id}"
+    magic_policy    = "${local.account_scope}/${var.magic.allow_policy_id}"
+    poke_app        = "${local.account_scope}/${var.poke.app_id}"
+    poke_policy     = "${local.account_scope}/${var.poke.allow_policy_id}"
+    ssh_app         = "${local.account_scope}/${var.ssh.app_id}"
+    ssh_policy      = "${local.account_scope}/${var.ssh.allow_policy_id}"
+  }
+}

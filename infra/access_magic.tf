@@ -48,11 +48,11 @@ module "magic" {
 import {
   for_each = var.import_existing && var.magic_human_access != "removed" ? toset(["magic"]) : toset([])
   to       = module.magic.cloudflare_zero_trust_access_application.this[0]
-  id       = "${var.cloudflare_account_id}/${var.magic.app_id}"
+  id       = local.import_ids.magic_app
 }
 
 import {
   for_each = var.import_existing && var.magic_human_access == "group" ? toset(["magic"]) : toset([])
   to       = module.magic.cloudflare_zero_trust_access_policy.allow[0]
-  id       = "${var.cloudflare_account_id}/${var.magic.allow_policy_id}"
+  id       = local.import_ids.magic_policy
 }
