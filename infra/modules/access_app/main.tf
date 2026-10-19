@@ -10,7 +10,7 @@ resource "cloudflare_zero_trust_access_policy" "allow" {
   count = local.keep_allow ? 1 : 0
 
   account_id = var.account_id
-  name       = "${var.name}-allow"
+  name       = local.switched ? "${var.name}-allow" : var.adopt.policy_name
   decision   = "allow"
 
   include = local.switched ? [{
