@@ -1,9 +1,9 @@
 locals {
-  switched     = var.adopt == null
-  keep_app     = var.human_access != "removed"
-  keep_allow   = var.human_access == "group"
-  narrow       = var.human_access == "service_only"
-  app_domain   = local.narrow && var.narrow_domain != "" ? var.narrow_domain : var.domain
+  switched   = var.adopt == null
+  keep_app   = var.human_access != "removed"
+  keep_allow = var.human_access == "group"
+  narrow     = var.human_access == "service_only"
+  app_domain = local.narrow && var.narrow_domain != "" ? var.narrow_domain : var.domain
 }
 
 resource "cloudflare_zero_trust_access_policy" "allow" {
