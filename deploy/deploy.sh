@@ -75,7 +75,15 @@ for _ in 1 2 3 4 5 6 7 8 9 10; do
 done
 "$here/apply-branding.sh" "$config_dir" || echo "deploy.sh: Pocket ID branding was not applied" >&2
 # The CIMD allowlist and the per-site /mcp APIs come from deploy/mcp/mcp.json.
-"$here/apply-mcp.sh" "$config_dir" || echo "deploy.sh: Pocket ID MCP authorization settings were not applied" >&2
+# Exit 3 is a genuinely absent key (reported, allowed); any other failure fails the deploy.
+rc=0
+"$here/apply-mcp.sh" "$config_dir" || rc=$?
+if [ "$rc" = 3 ]; then
+  echo "deploy.sh: Pocket ID MCP authorization settings were not applied (no API key)" >&2
+elif [ "$rc" != 0 ]; then
+  echo "deploy.sh: apply-mcp.sh failed (exit $rc); the Pocket ID MCP authorization settings are NOT applied" >&2
+  exit "$rc"
+fi
 
 cat <<MSG
 

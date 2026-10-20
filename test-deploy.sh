@@ -80,6 +80,9 @@ s = json.load(open(st))
 a = sys.argv[1:]
 method = a[a.index("-X") + 1] if "-X" in a else "GET"
 url = [x for x in a if x.startswith("http")][0].split("://127.0.0.1:1411")[1]
+# Real curl globs [ ] in a URL unless -g/--globoff is given (error 3, "bad range").
+if ("[" in url or "]" in url) and not any(x == "--globoff" or (x.startswith("-") and not x.startswith("--") and "g" in x) for x in a):
+    sys.stderr.write("curl: (3) bad range in URL position 1\n"); sys.exit(3)
 body = sys.stdin.read() if "--data-binary" in a else ""
 open(os.environ["FAKE_LOG"], "a").write(method + " " + url + "\n")
 path = url.split("?")[0]
@@ -119,6 +122,10 @@ check "mcp first run sets the allowlist, creates the API and opens it to metadat
 : >"$mf/log"
 PATH=$mf/bin:$PATH "$root/deploy/apply-mcp.sh" "$mf/cfg" >"$mf/run2" 2>&1
 check "mcp second run writes nothing" bash -c '! grep -Eq "^(PUT|POST) " "$1" && [ ! -s "$2" ]' _ "$mf/log" "$mf/run2"
+check "mcp run fails loudly, naming the call, when the API list comes back empty" \
+  bash -c 'printf "#!/usr/bin/env bash\nexit 0\n" >"$1/bin/curl2"; chmod +x "$1/bin/curl2"; mkdir -p "$1/empty"; cp "$1/bin/curl2" "$1/empty/curl"; PATH=$1/empty:$PATH "$2/deploy/apply-mcp.sh" "$1/cfg" >"$1/run3" 2>&1; rc=$?; [ $rc != 0 ] && [ $rc != 3 ] && grep -q "GET .*application-configuration/all failed or returned nothing" "$1/run3" && ! grep -q Traceback "$1/run3"' _ "$mf" "$root"
+check "deploy.sh fails on an apply-mcp failure and allows only exit 3" \
+  bash -c 'grep -q "exit \"\$rc\"" "$1/deploy/deploy.sh" && grep -q "= 3" "$1/deploy/deploy.sh"' _ "$root"
 check "mcp without an API key says so and exits 3" \
   bash -c 'PATH=$1/bin:$PATH "$2/deploy/apply-mcp.sh" "$1/none" >/dev/null 2>&1; [ $? = 3 ]' _ "$mf" "$root"
 

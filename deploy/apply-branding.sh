@@ -14,7 +14,7 @@ if [ ! -s "$keyfile" ]; then
   exit 3
 fi
 key=$(tr -d '[:space:]' <"$keyfile")
-api() { curl -fsS -H "X-API-KEY: $key" "$@"; }
+api() { curl -gfsS -H "X-API-KEY: $key" "$@"; }
 
 py() { python3 -I -c "$@"; }
 want_name=$(py 'import json,sys; print(json.load(open(sys.argv[1]))["app_name"])' "$brand")
