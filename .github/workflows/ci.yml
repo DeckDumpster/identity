@@ -1,0 +1,37 @@
+name: CI
+
+# Runs the gate .spira/testenv.toml declares: its `default` suites, in its `image`.
+# GitHub-hosted runner, no secrets. Keep the image and suite list here in step with
+# that file. `gate` is the one check a publish PR waits on.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    container:
+      image: docker.io/library/buildpack-deps:bookworm
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run the declared default suites
+        run: |
+          set -u
+          failed=""
+          for s in test-deploy test-infra test-check test-breakglass test-backup; do
+            echo "::group::$s"
+            bash "$s.sh" || failed="$failed $s"
+            echo "::endgroup::"
+          done
+          if [ -n "$failed" ]; then
+            echo "red suites:$failed" >&2
+            exit 1
+          fi
