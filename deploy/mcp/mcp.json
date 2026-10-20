@@ -1,0 +1,24 @@
+{
+  "cimd_clients": [
+    {
+      "name": "Claude Code",
+      "url": "https://claude.ai/oauth/claude-code-client-metadata",
+      "source": "https://claude.com/docs/connectors/building/authentication (Callback URLs); document fetched 2026-10-19"
+    },
+    {
+      "name": "Claude (claude.ai, Desktop, mobile, custom connectors)",
+      "url": "https://claude.ai/oauth/mcp-oauth-client-metadata",
+      "source": "served by Anthropic with redirect https://claude.ai/api/mcp/auth_callback, the hosted-app callback named on https://claude.com/docs/connectors/building/authentication; the page does not itself name this URL (reported in anthropics/claude-code and mcp-stdio#463); document fetched 2026-10-19"
+    }
+  ],
+  "apis": [
+    {
+      "name": "dumpstar MCP",
+      "resource": "https://star.dumpster.cards/mcp",
+      "permissions": [
+        { "key": "mcp:use", "name": "Use MCP tools", "description": "Call the dumpstar MCP tools as the signed-in user" }
+      ],
+      "allow_cimd_clients": true
+    }
+  ]
+}

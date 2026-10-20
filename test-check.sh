@@ -31,7 +31,8 @@ class H(http.server.BaseHTTPRequestHandler):
         if self.path.startswith("/.well-known/openid-configuration"):
             if mode == "baddisc": self.send_response(404); self.end_headers(); return
             self.send_response(200); self.end_headers()
-            self.wfile.write(b'{"issuer":"$base","jwks_uri":"$base/.well-known/jwks.json"}'); return
+            flag = b'' if mode == "nocimd" else b',"client_id_metadata_document_supported":true'
+            self.wfile.write(b'{"issuer":"$base","jwks_uri":"$base/.well-known/jwks.json"' + flag + b'}'); return
         self.send_response(200); self.end_headers(); self.wfile.write(b"ok")
 http.server.HTTPServer(("127.0.0.1", $port), H).serve_forever()
 PY
@@ -66,6 +67,11 @@ check "healthy again: no further page" [ "$(pushes)" = 2 ]
 echo baddisc >"$t/mode"
 run; rc=$?
 check "discovery down (site up): alarms" bash -c '[ "$1" = 1 ] && tail -n1 "$2" | grep -q "OIDC discovery"' _ "$rc" "$t/pushes"
+echo up >"$t/mode"; run
+
+echo nocimd >"$t/mode"
+run; rc=$?
+check "CIMD not advertised: alarms" bash -c '[ "$1" = 1 ] && tail -n1 "$2" | grep -q "client_id_metadata_document_supported"' _ "$rc" "$t/pushes"
 echo up >"$t/mode"; run
 
 touch -d '37 hours ago' "$t/stamp"
