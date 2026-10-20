@@ -15,7 +15,14 @@ if [ ! -s "$keyfile" ]; then
   exit 3
 fi
 key=$(tr -d '[:space:]' <"$keyfile")
-api() { curl -fsS -H "X-API-KEY: $key" "$@"; }
+# -g: curl would otherwise treat the [ ] of pagination[limit] as a glob range and refuse the URL.
+api() { curl -gfsS -H "X-API-KEY: $key" "$@"; }
+# get <url>: a GET whose body is needed; a failed call or an empty body stops the script, naming the call.
+get() {
+  local out
+  out=$(api "$@") && [ -n "$out" ] || { echo "apply-mcp.sh: GET ${*: -1} failed or returned nothing" >&2; return 1; }
+  printf '%s\n' "$out"
+}
 send() { # send <method> <path> <json-on-stdin>
   api -X "$1" -H 'Content-Type: application/json' --data-binary @- "$base$2" >/dev/null
 }
@@ -23,7 +30,7 @@ py() { python3 -I -c "$@"; }
 
 # 1. The CIMD allowlist. The update endpoint replaces the whole configuration, so send every live
 #    value back with ours laid over it; nothing is sent when the live list already equals ours.
-live=$(api "$base/api/application-configuration/all")
+live=$(get "$base/api/application-configuration/all")
 body=$(py '
 import json, sys
 cfg = {e["key"]: e["value"] for e in json.loads(sys.argv[1])}
@@ -55,14 +62,17 @@ for a in items:
     if a["resource"].rstrip("/") == sys.argv[2]:
         print(a["id"]); break
 '
-  id=$(py "$find" "$(api "$base/api/apis?pagination[limit]=1000")" "$resource")
+  list=$(get "$base/api/apis?pagination[limit]=1000")
+  id=$(py "$find" "$list" "$resource")
   if [ -z "$id" ]; then
     py 'import json,sys; a=json.loads(sys.argv[1]); print(json.dumps({"name":a["name"],"resource":a["resource"]}))' "$item" \
       | send POST /api/apis
-    id=$(py "$find" "$(api "$base/api/apis?pagination[limit]=1000")" "$resource")
+    list=$(get "$base/api/apis?pagination[limit]=1000")
+    id=$(py "$find" "$list" "$resource")
+    [ -n "$id" ] || { echo "apply-mcp.sh: the API for $resource is not listed after creating it" >&2; exit 1; }
     echo "apply-mcp.sh: created the API for $resource"
   fi
-  cur=$(api "$base/api/apis/$id")
+  cur=$(get "$base/api/apis/$id")
   # Permissions: replace the set only when the keys, names or descriptions differ.
   perms=$(py '
 import json, sys
@@ -75,7 +85,7 @@ print(json.dumps({"permissions": a["permissions"]}))
   if [ -n "$perms" ]; then
     send PUT "/api/apis/$id/permissions" <<<"$perms"
     echo "apply-mcp.sh: set the permissions of $resource"
-    cur=$(api "$base/api/apis/$id")
+    cur=$(get "$base/api/apis/$id")
   fi
   access=$(py '
 import json, sys
