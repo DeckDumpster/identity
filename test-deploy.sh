@@ -62,6 +62,66 @@ check "branding second run writes nothing" bash -c '! grep -q -- "-X PUT" "$1" &
 check "branding without an API key says so and exits 3" \
   bash -c 'PATH=$1/bin:$PATH "$2/deploy/apply-branding.sh" "$1/none" >/dev/null 2>&1; [ $? = 3 ]' _ "$fake" "$root"
 
+# apply-mcp.sh against a stateful fake Pocket ID: first run writes the allowlist, the API, its
+# permission and the CIMD access; the second run changes nothing.
+m=$root/deploy/mcp/mcp.json
+mj() { python3 -I -c 'import json,sys; d=json.load(open(sys.argv[1])); sys.exit(0 if eval(sys.argv[2]) else 1)' "$m" "$1"; }
+check "mcp.json allowlist is exactly the two Claude client URLs, each with a source" \
+  mj 'sorted(c["url"] for c in d["cimd_clients"])==["https://claude.ai/oauth/claude-code-client-metadata","https://claude.ai/oauth/mcp-oauth-client-metadata"] and all(c["source"] for c in d["cimd_clients"])'
+check "mcp.json declares the dumpstar API with the /mcp URL as its resource and CIMD access on" \
+  mj 'any(a["resource"]=="https://star.dumpster.cards/mcp" and a["allow_cimd_clients"] and a["permissions"] for a in d["apis"])'
+check "deploy applies the MCP settings" grep -q 'apply-mcp.sh' "$root/deploy/deploy.sh"
+mf=$out/mcpfake; mkdir -p "$mf/bin"
+cat >"$mf/bin/curl" <<'FAKE'
+#!/usr/bin/env python3
+import json, os, sys
+st = os.environ["FAKE_STATE"] + "/state.json"
+s = json.load(open(st))
+a = sys.argv[1:]
+method = a[a.index("-X") + 1] if "-X" in a else "GET"
+url = [x for x in a if x.startswith("http")][0].split("://127.0.0.1:1411")[1]
+body = sys.stdin.read() if "--data-binary" in a else ""
+open(os.environ["FAKE_LOG"], "a").write(method + " " + url + "\n")
+path = url.split("?")[0]
+out = None
+if path == "/api/application-configuration/all":
+    out = [{"key": k, "value": v} for k, v in s["cfg"].items()]
+elif path == "/api/application-configuration" and method == "PUT":
+    s["cfg"] = json.loads(body)
+elif path == "/api/apis" and method == "GET":
+    out = {"data": s["apis"]}
+elif path == "/api/apis" and method == "POST":
+    d = json.loads(body)
+    s["apis"].append({"id": "api%d" % (len(s["apis"]) + 1), "name": d["name"], "resource": d["resource"], "permissions": [], "allowCimdClients": False})
+else:
+    parts = path.split("/")
+    api = [x for x in s["apis"] if x["id"] == parts[3]][0]
+    if len(parts) == 4:
+        out = api
+    elif parts[4] == "permissions":
+        api["permissions"] = [dict(p, id="p-" + p["key"], allowedForCimdClients=False) for p in json.loads(body)["permissions"]]
+    elif parts[4] == "cimd-access":
+        d = json.loads(body)
+        api["allowCimdClients"] = d["enabled"]
+        for p in api["permissions"]:
+            p["allowedForCimdClients"] = p["id"] in d["permissionIds"]
+json.dump(s, open(st, "w"))
+if out is not None:
+    print(json.dumps(out))
+FAKE
+chmod +x "$mf/bin/curl"
+mkdir -p "$mf/cfg"; printf 'k\n' >"$mf/cfg/pocket-id-api-key"
+echo '{"cfg":{"appName":"x","cimdUrlAllowlist":"[]"},"apis":[]}' >"$mf/state.json"
+export FAKE_STATE=$mf FAKE_LOG=$mf/log
+PATH=$mf/bin:$PATH "$root/deploy/apply-mcp.sh" "$mf/cfg" >"$mf/run1" 2>&1
+check "mcp first run sets the allowlist, creates the API and opens it to metadata clients" \
+  python3 -I -c 'import json,sys; s=json.load(open(sys.argv[1]+"/state.json")); a=s["apis"][0]; sys.exit(0 if sorted(json.loads(s["cfg"]["cimdUrlAllowlist"]))==["https://claude.ai/oauth/claude-code-client-metadata","https://claude.ai/oauth/mcp-oauth-client-metadata"] and s["cfg"]["appName"]=="x" and a["resource"]=="https://star.dumpster.cards/mcp" and a["allowCimdClients"] and [p["allowedForCimdClients"] for p in a["permissions"]]==[True] else 1)' "$mf"
+: >"$mf/log"
+PATH=$mf/bin:$PATH "$root/deploy/apply-mcp.sh" "$mf/cfg" >"$mf/run2" 2>&1
+check "mcp second run writes nothing" bash -c '! grep -Eq "^(PUT|POST) " "$1" && [ ! -s "$2" ]' _ "$mf/log" "$mf/run2"
+check "mcp without an API key says so and exits 3" \
+  bash -c 'PATH=$1/bin:$PATH "$2/deploy/apply-mcp.sh" "$1/none" >/dev/null 2>&1; [ $? = 3 ]' _ "$mf" "$root"
+
 # Host refusal: skipped when run on the prod host itself.
 have=$(hostname -s); want=$(tr -d '[:space:]' <"$root/deploy/prod-host")
 check "prod-host names ubuntu-mini-0" [ "$want" = ubuntu-mini-0 ]

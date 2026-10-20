@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Synthetic check for id.gantt.pub: the site, its OIDC discovery document and the age of the
-# newest backup. Raises one Pushover alarm when the set of problems changes and one "recovered"
+# newest backup, and that discovery advertises Client ID Metadata Document support (MCP sign-in). Raises one Pushover alarm when the set of problems changes and one "recovered"
 # when it clears. Run every minute by identity-check.timer on ubuntu-mini-0.
 #
 # The alert path is the one the other product services on this host use: Pushover, credentials
@@ -47,6 +47,8 @@ discovery_problem() {
     echo "OIDC discovery answered HTTP $code"
   elif ! grep -Eq "\"issuer\" *: *\"$ID_BASE\"" "$body" || ! grep -Eq '"jwks_uri"' "$body"; then
     echo "OIDC discovery is not a valid document for $ID_BASE"
+  elif ! grep -Eq '"client_id_metadata_document_supported" *: *true' "$body"; then
+    echo "OIDC discovery does not advertise client_id_metadata_document_supported (MCP clients cannot sign in; deploy/apply-mcp.sh)"
   fi
 }
 

@@ -74,6 +74,8 @@ for _ in 1 2 3 4 5 6 7 8 9 10; do
   sleep 3
 done
 "$here/apply-branding.sh" "$config_dir" || echo "deploy.sh: Pocket ID branding was not applied" >&2
+# The CIMD allowlist and the per-site /mcp APIs come from deploy/mcp/mcp.json.
+"$here/apply-mcp.sh" "$config_dir" || echo "deploy.sh: Pocket ID MCP authorization settings were not applied" >&2
 
 cat <<MSG
 
