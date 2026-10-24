@@ -6,7 +6,7 @@ tf_version=1.13.3
 tf_sha256=71fc43d92ea09907be5d416d2405a6a9c2d1ceaed633f5e175c0af26e8c4b365
 if ! command -v terraform >/dev/null 2>&1; then
   dir=$(mktemp -d)
-  command -v curl >/dev/null || { apt-get update -qq && apt-get install -y -qq curl ca-certificates unzip >/dev/null; }
+  { command -v curl && command -v unzip; } >/dev/null || { apt-get update -qq && apt-get install -y -qq curl ca-certificates unzip >/dev/null; }
   curl -fsSL -o "$dir/tf.zip" "https://releases.hashicorp.com/terraform/${tf_version}/terraform_${tf_version}_linux_amd64.zip"
   echo "${tf_sha256}  $dir/tf.zip" | sha256sum -c -
   unzip -q -o "$dir/tf.zip" terraform -d "$dir"
