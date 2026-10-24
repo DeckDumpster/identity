@@ -1,5 +1,11 @@
 # Plan-free assertions with a mocked provider: no credentials, no network.
 mock_provider "aws" {
+  mock_data "aws_caller_identity" {
+    defaults = {
+      account_id = "123456789012"
+    }
+  }
+
   mock_data "aws_iam_policy_document" {
     defaults = {
       json = "{\"Version\":\"2012-10-17\",\"Statement\":[]}"
@@ -15,7 +21,7 @@ override_resource {
   target          = aws_s3_bucket.backups
   override_during = plan
   values = {
-    arn = "arn:aws:s3:::identity-backups"
+    arn = "arn:aws:s3:::identity-backups-123456789012"
   }
 }
 
@@ -25,6 +31,10 @@ run "bucket_is_private_versioned_encrypted" {
   assert {
     condition     = startswith(aws_s3_bucket.backups.bucket, "identity-")
     error_message = "bucket must carry the identity- prefix the deploy role admits"
+  }
+  assert {
+    condition     = aws_s3_bucket.backups.bucket == "identity-backups-${data.aws_caller_identity.current.account_id}"
+    error_message = "bucket name must be account-suffixed: the bare name is owned by another AWS account"
   }
   assert {
     condition = alltrue([

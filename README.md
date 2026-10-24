@@ -144,7 +144,8 @@ the tailnet: `ssh ryangantt@ubuntu-mini-0`.
 ## Backups and the restore drill
 
 Pocket ID's data (SQLite `pocket-id.db`, signing keys, uploads) is backed up off-box to
-`identity-backups`, a private, versioned, encrypted bucket in the CI account
+`identity-backups-<account id>` (the bare name is taken by another AWS account; the
+Terraform `bucket` output is the name), a private, versioned, encrypted bucket in the CI account
 (`infra-backups/`, its own Terraform root and state key, under the `terraform-deploy` boundary). The job's credential
 (`identity-backup`, secret `identity/backup`) can only `s3:PutObject`.
 
@@ -155,7 +156,7 @@ Pocket ID's data (SQLite `pocket-id.db`, signing keys, uploads) is backed up off
   Needs `sqlite3` and the AWS CLI on ubuntu-mini-0.
 - **Credential:** after Terraform apply, copy the secret's keys into `~/.config/identity/backup.env`
   (0600) as `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_DEFAULT_REGION=us-west-2` and
-  `IDENTITY_BACKUP_BUCKET=identity-backups`. `deploy.sh` enables the timer only once the file exists.
+  `IDENTITY_BACKUP_BUCKET=<the Terraform bucket output>`. `deploy.sh` enables the timer only once the file exists.
 - **Restore drill** (operator identity, not the backup key):
   `deploy/restore-drill.sh --newest [--boot]` fetches the newest backup, restores it to a scratch
   directory and asserts its users, groups and memberships equal the live database's (a difference
