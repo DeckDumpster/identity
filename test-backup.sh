@@ -44,4 +44,15 @@ check "drill refuses an archive without a database" bash -c '
 
 check "backup refuses a data dir with no database" bash -c '! "$1" "$2" "$3" >/dev/null 2>&1' _ "$root/deploy/backup.sh" "$tmp/nope" "$tmp/o2"
 check "upload refuses without a bucket" bash -c '! env -u IDENTITY_BACKUP_BUCKET "$1" --upload "$2" >/dev/null 2>&1' _ "$root/deploy/backup.sh" "$data"
+
+# An unreadable file fails the run and uploads nothing (root reads anything, so drop to nobody).
+if command -v setpriv >/dev/null && [ "$(id -u)" = 0 ]; then
+  chmod 755 "$tmp"; mkdir -p "$tmp/bin"
+  printf '#!/bin/sh\necho "$@" >> "%s/aws.calls"\n' "$tmp" >"$tmp/bin/aws"; chmod +x "$tmp/bin/aws"
+  cp -r "$data" "$tmp/locked"; chmod -R a+rX "$tmp/locked"; chmod 700 "$tmp/locked/uploads"; chown -R 12345:12345 "$tmp/locked/uploads"
+  check "upload with an unreadable uploads/ exits non-zero" bash -c '! PATH="$1/bin:$PATH" IDENTITY_BACKUP_BUCKET=b IDENTITY_BACKUP_RUNAS= IDENTITY_STATE_DIR="$1/st" TMPDIR="$1" setpriv --reuid=65534 --regid=65534 --clear-groups "$2" --upload "$1/locked" >/dev/null 2>&1' _ "$tmp" "$root/deploy/backup.sh"
+  check "...and uploads nothing" test ! -e "$tmp/aws.calls"
+else
+  echo "skip unreadable-file test (needs root and setpriv)"
+fi
 exit $fail
