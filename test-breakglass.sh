@@ -79,7 +79,7 @@ cat >"$t/sink.py" <<PY
 import http.server
 class H(http.server.BaseHTTPRequestHandler):
     def log_message(self, *a): pass
-    def do_GET(self): self.send_response(200); self.end_headers(); self.wfile.write(b'{"issuer":"http://127.0.0.1:$((port+1))","jwks_uri":"x"}')
+    def do_GET(self): self.send_response(200); self.end_headers(); self.wfile.write(b'{"issuer":"http://127.0.0.1:$((port+1))","jwks_uri":"x","client_id_metadata_document_supported":true}')
     def do_POST(self):
         n = int(self.headers.get("Content-Length", 0)); b = self.rfile.read(n).decode(errors="replace")
         open("$t/pushes", "a").write(b.replace("\r\n", " ") + "\n"); self.send_response(200); self.end_headers()
