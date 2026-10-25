@@ -1,0 +1,60 @@
+name: Deploy
+
+# Deploys the commit that just landed on main to production on ubuntu-mini-0. Ported from
+# dumpstar's deploy.yml. Merging is not deploying on its own; this makes the two one event.
+#
+# Runs ON THE BOX, on a runner labelled `identity-prod` (deploy/runner-setup.sh). The runner's
+# workspace is checked out at the pushed sha, then fast-forwarded into the production checkout
+# ~/identity, and deploy/deploy.sh runs FROM that checkout, as dumpstar does: the checkout is
+# stable, and the units deploy.sh renders (identity-backup.service) point into it. Nobody moves
+# it by hand. deploy.sh refuses any host but deploy/prod-host. main only receives commits that
+# passed the gate, so this does not re-run the suite.
+#
+# Until a runner with the `identity-prod` label exists the job waits; nothing else is affected.
+
+on:
+  push:
+    branches: [main]
+  # Redeploys the current main without a new commit. The job refuses any ref but main and
+  # shares the concurrency group below.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Deploys must not overlap; a deploy always ships the newest main, so only the latest request
+# matters.
+concurrency:
+  group: identity-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    runs-on: [self-hosted, identity-prod]
+    timeout-minutes: 20
+    env:
+      PROD_CHECKOUT: $HOME/identity
+      DEPLOY_SHA: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - name: Move the production checkout to the landed commit
+        run: |
+          set -euo pipefail
+          checkout="$(eval echo "$PROD_CHECKOUT")"
+          git -C "$checkout" fetch "$GITHUB_WORKSPACE" "$DEPLOY_SHA"
+          git -C "$checkout" merge --ff-only "$DEPLOY_SHA"
+      - name: Deploy prod
+        run: |
+          set -euo pipefail
+          checkout="$(eval echo "$PROD_CHECKOUT")"
+          bash "$checkout/deploy/deploy.sh"
+      - name: Smoke
+        run: |
+          set -euo pipefail
+          checkout="$(eval echo "$PROD_CHECKOUT")"
+          [ "$(git -C "$checkout" rev-parse HEAD)" = "$DEPLOY_SHA" ] || { echo "prod checkout is not at $DEPLOY_SHA" >&2; exit 1; }
+          bash "$checkout/deploy/smoke.sh"

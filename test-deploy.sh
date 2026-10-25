@@ -129,6 +129,15 @@ check "deploy.sh fails on an apply-mcp failure and allows only exit 3" \
 check "mcp without an API key says so and exits 3" \
   bash -c 'PATH=$1/bin:$PATH "$2/deploy/apply-mcp.sh" "$1/none" >/dev/null 2>&1; [ $? = 3 ]' _ "$mf" "$root"
 
+# Deploy workflow and smoke.
+w=$root/.github/workflows/deploy.yml
+check "workflow runs on the identity-prod runner" grep -Fq 'runs-on: [self-hosted, identity-prod]' "$w"
+check "workflow refuses any ref but main" grep -Fq "github.ref == 'refs/heads/main'" "$w"
+check "workflow does not cancel a running deploy" grep -Fq 'cancel-in-progress: false' "$w"
+check "workflow runs deploy.sh and smoke.sh" bash -c 'grep -q "deploy/deploy.sh" "$1" && grep -q "deploy/smoke.sh" "$1"' _ "$w"
+check "runner-setup.sh and smoke.sh parse" bash -c 'bash -n "$1/deploy/runner-setup.sh" && bash -n "$1/deploy/smoke.sh"' _ "$root"
+check "smoke fails when nothing serves" bash -c 'SMOKE_BASE=http://127.0.0.1:9 SMOKE_TRIES=1 "$1/deploy/smoke.sh" >/dev/null 2>&1; [ $? = 1 ]' _ "$root"
+
 # Host refusal: skipped when run on the prod host itself.
 have=$(hostname -s); want=$(tr -d '[:space:]' <"$root/deploy/prod-host")
 check "prod-host names ubuntu-mini-0" [ "$want" = ubuntu-mini-0 ]

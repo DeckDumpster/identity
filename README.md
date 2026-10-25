@@ -12,7 +12,19 @@ a person never touches an Access policy, Terraform or an MFA code.
 `deploy/deploy.sh` installs Pocket ID and a cloudflared tunnel as rootless Quadlet units for
 user `ryangantt` on the host named in `deploy/prod-host` (ubuntu-mini-0). It exits 2 anywhere
 else, and is idempotent: it rewrites a unit and restarts only when its rendered text changed.
-Merging does not deploy; the Concierge runs it from a production checkout on ubuntu-mini-0.
+Merging does not deploy by itself: `.github/workflows/deploy.yml` does, on every push to `main`
+(and `workflow_dispatch`, main only). It runs on the self-hosted `identity-prod` runner on
+ubuntu-mini-0, fast-forwards the production checkout `~/identity` to the pushed sha (fetched
+from the runner workspace, so the checkout needs no remote or credential), runs
+`deploy/deploy.sh` from that checkout (as dumpstar does; the backup unit points into it), then
+`deploy/smoke.sh` (Pocket ID `/healthz` and OIDC discovery on loopback). The run fails if the
+checkout is not at the pushed sha or the smoke is red. Nothing moves `~/identity` by hand.
+
+**Runner setup** (once, as `ryangantt` on ubuntu-mini-0; needs a registration token minted by a
+repo admin): `gh api -X POST repos/DeckDumpster/identity/actions/runners/registration-token
+--jq .token`, then `deploy/runner-setup.sh <token>`. It clones `~/identity` if absent, installs
+the runner in `~/actions-runner-identity` with label `identity-prod`, and runs it as the user
+service `identity-runner` (CPU-fenced; needs `loginctl enable-linger ryangantt`).
 
 - Images are pinned by tag and digest in `deploy/image.env` (Pocket ID v2.18.0
   `sha256:323e7ef5…b5165`, cloudflared 2026.10.1 `sha256:a15a3b50…b2d5`). Bump the tag and
