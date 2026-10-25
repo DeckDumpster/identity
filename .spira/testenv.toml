@@ -2,6 +2,9 @@
 image = "docker.io/library/buildpack-deps:bookworm"
 workdir = "/work"
 timeout = 300
+# ci_entry is the command a queue.local round runs on a round VM (read by the
+# harness's gate::own::ci_entry): the whole of CI, every tier of `default` in order.
+ci_entry = "bash ci.sh"
 default = ["test-deploy", "test-infra", "test-check", "test-breakglass", "test-backup"]
 
 [tier.test-deploy]
