@@ -174,6 +174,14 @@ Terraform `bucket` output is the name), a private, versioned, encrypted bucket i
   directory and asserts its users, groups and memberships equal the live database's (a difference
   since the last 15-minute snapshot reads as a mismatch; rerun). `--archive <file> --reference <dir>`
   works offline; `--boot` also starts a scratch Pocket ID and waits for its healthcheck.
+- **Restore step: clear the single-instance lock.** Pocket ID 2.18 refuses to start ("already one
+  instance of Pocket ID running") while its `francis_hosts` table holds a host that health-checked
+  within the last 90s, and a hot snapshot always carries the live instance's row. The row expires
+  by itself after 90s, but a fresh snapshot restored at once, or onto a box whose clock is behind
+  the snapshot's, would wait or never boot. Before starting Pocket ID on restored data, run on the
+  restored copy only (never the live database):
+  `sqlite3 <restored>/pocket-id.db 'PRAGMA foreign_keys=ON; DELETE FROM francis_hosts;'`.
+  `restore-drill.sh --boot` does this itself.
 - **`ENCRYPTION_KEY` is not in the backup.** Keep a copy of `~/.config/identity/pocket-id.env`
   elsewhere; a restore without it cannot decrypt Pocket ID's stored keys.
 - **Deploying infra:** needs `identity` added to `TERRAFORM_NAME_PREFIXES` in ephemeral-ci's
