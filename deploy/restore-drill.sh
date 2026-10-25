@@ -71,6 +71,12 @@ if [ "$boot" = 1 ]; then
   # shellcheck source=image.env
   . "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/image.env"
   name=pocket-id-drill-$$
+  # The snapshot was taken under a live Pocket ID, so its francis_hosts table (the embedded actor
+  # runtime, capped at one host) still lists that instance; a booting copy refuses to start while
+  # the row is fresh (the health-check deadline is 90s). Clear it in the restored copy only.
+  if [ -n "$(sqlite3 "$restored/pocket-id.db" "SELECT name FROM sqlite_master WHERE name='francis_hosts'")" ]; then
+    sqlite3 "$restored/pocket-id.db" "PRAGMA foreign_keys=ON; DELETE FROM francis_hosts;"
+  fi
   chmod -R a+rwX "$restored"
   # No --rm: a container that dies at start must stay inspectable so its logs can be printed.
   podman run -d --name "$name" -v "$restored:/app/data:Z" --env-file "${IDENTITY_CONFIG_DIR:-$HOME/.config/identity}/pocket-id.env" \
