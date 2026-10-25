@@ -7,6 +7,7 @@
 # Usage: backup.sh <datadir> <outdir>      write the archive locally and print its path
 #        backup.sh --upload [datadir]      snapshot then upload to $IDENTITY_BACKUP_BUCKET
 set -euo pipefail
+shopt -s inherit_errexit  # a failure inside archive=$(snapshot ...) must stop the run, not be swallowed
 
 db_name=pocket-id.db
 
@@ -17,9 +18,14 @@ snapshot() { # <datadir> <outdir>
   stage=$(mktemp -d)
   mkdir -p "$out"
   sqlite3 "$data/$db_name" "VACUUM INTO '$stage/$db_name'"
-  tar -C "$data" --exclude="./$db_name" --exclude="./$db_name-*" -cf - . | tar -C "$stage" -xf -
   name=identity-$(date -u +%Y%m%dT%H%M%SZ).tar.gz
-  tar -C "$stage" -czf "$out/$name" .
+  # Any unreadable file or tar error fails the run: a partial archive is never produced.
+  if ! { tar -C "$data" --exclude="./$db_name" --exclude="./$db_name-*" -cf - . | tar -C "$stage" --no-same-owner -xf -; } \
+     || ! tar -C "$stage" -czf "$out/$name" .; then
+    rm -rf "$stage" "$out/$name"
+    echo "backup.sh: archiving $data failed; nothing written" >&2
+    return 1
+  fi
   rm -rf "$stage"
   echo "$out/$name"
 }
@@ -28,7 +34,11 @@ if [ "${1:-}" = --upload ]; then
   : "${IDENTITY_BACKUP_BUCKET:?IDENTITY_BACKUP_BUCKET is required}"
   data=${2:-$(podman volume inspect pocket-id-data --format '{{.Mountpoint}}')}
   tmp=$(mktemp -d); trap 'rm -rf "$tmp"' EXIT
-  archive=$(snapshot "$data" "$tmp")
+  # The rootless volume is owned by the container's user namespace (uploads/ is 100999, mode 700),
+  # so the host user cannot read it: archive inside the same namespace via podman unshare.
+  # IDENTITY_BACKUP_RUNAS overrides the wrapper (empty = run directly, used by the test).
+  read -ra runas <<<"${IDENTITY_BACKUP_RUNAS-podman unshare}"
+  archive=$("${runas[@]}" "$0" "$data" "$tmp")
   # PutObject only: no list, no read, no overwrite (the key is unique per second).
   aws s3api put-object --bucket "$IDENTITY_BACKUP_BUCKET" --key "$(basename "$archive")" \
     --body "$archive" --no-cli-pager >/dev/null
