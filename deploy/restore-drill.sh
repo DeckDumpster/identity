@@ -18,7 +18,14 @@ while [ $# -gt 0 ]; do
   esac
 done
 command -v sqlite3 >/dev/null || { echo "restore-drill.sh: sqlite3 is required" >&2; exit 2; }
-scratch=$(mktemp -d); trap 'rm -rf "$scratch"' EXIT
+scratch=$(mktemp -d); name=
+# The scratch container writes files as a subuid the host user cannot remove: delete them from
+# inside the user namespace, on every exit path.
+cleanup() {
+  [ -z "$name" ] || podman rm -f "$name" >/dev/null 2>&1 || true
+  rm -rf "$scratch" 2>/dev/null || podman unshare rm -rf "$scratch" 2>/dev/null || true
+}
+trap cleanup EXIT
 
 if [ "$newest" = 1 ]; then
   : "${IDENTITY_BACKUP_BUCKET:?IDENTITY_BACKUP_BUCKET is required}"
@@ -64,14 +71,16 @@ if [ "$boot" = 1 ]; then
   # shellcheck source=image.env
   . "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/image.env"
   name=pocket-id-drill-$$
-  trap 'podman rm -f "$name" >/dev/null 2>&1 || true; rm -rf "$scratch"' EXIT
   chmod -R a+rwX "$restored"
-  podman run -d --name "$name" --rm -v "$restored:/app/data:Z" --env-file "${IDENTITY_CONFIG_DIR:-$HOME/.config/identity}/pocket-id.env" \
+  # No --rm: a container that dies at start must stay inspectable so its logs can be printed.
+  podman run -d --name "$name" -v "$restored:/app/data:Z" --env-file "${IDENTITY_CONFIG_DIR:-$HOME/.config/identity}/pocket-id.env" \
     -e APP_URL=http://localhost "$POCKET_ID_IMAGE" >/dev/null
   for _ in $(seq 30); do
     podman exec "$name" /app/pocket-id healthcheck >/dev/null 2>&1 && { echo "restore-drill: scratch instance healthy"; exit 0; }
     sleep 2
   done
-  echo "restore-drill: FAIL: scratch instance never became healthy" >&2
+  echo "restore-drill: FAIL: scratch instance never became healthy; container state and last log lines:" >&2
+  podman inspect "$name" --format 'status={{.State.Status}} exit={{.State.ExitCode}}' >&2 || true
+  podman logs --tail 40 "$name" >&2 || true
   exit 1
 fi
