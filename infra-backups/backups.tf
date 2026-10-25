@@ -2,8 +2,12 @@
 # The writer can only upload (law-off-box-backups-are-private-and-write-only): it cannot list,
 # read, overwrite or delete, so a compromised host cannot destroy history. Every snapshot is
 # one object under a unique key; restore uses the operator's own identity.
+# S3 bucket names are global and the bare name belongs to another account, so the name carries
+# the account id, as dumpstar-backups-<acct> does.
+data "aws_caller_identity" "current" {}
+
 resource "aws_s3_bucket" "backups" {
-  bucket = "identity-backups"
+  bucket = "identity-backups-${data.aws_caller_identity.current.account_id}"
 
   lifecycle {
     prevent_destroy = true
