@@ -241,3 +241,15 @@ colours; `logo.svg`).
   logo URL resolves.
 - Screenshots of both screens before and after are taken by whoever applies this (they need the
   live sign-in).
+
+## Onboarding a person to an app
+
+On the identity host, with the admin API key in `~/.config/identity/pocket-id-api-key`:
+
+    deploy/onboard.sh kim@example.com --name Kim --group poke-users --group magic-users --link
+    deploy/onboard.sh --list poke-users
+
+It creates the user if absent (username from the email), creates each group if absent, adds the
+user without dropping existing members, and with `--link` (`--ttl <seconds>`, default 3600) prints a
+one-time login link and its expiry to send. Running it again changes nothing. `--list` prints each
+member and whether they have a passkey. Tested by `test-onboard.sh` against a fake admin API.
