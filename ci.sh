@@ -7,7 +7,7 @@
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
-for t in test-deploy test-infra test-check test-breakglass test-backup; do
+for t in test-deploy test-infra test-check test-breakglass test-backup test-onboard; do
   echo "=== ci.sh: $t ==="
   bash "$t.sh"
 done

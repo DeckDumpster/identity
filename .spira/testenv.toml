@@ -5,7 +5,7 @@ timeout = 300
 # ci_entry is the command a queue.local round runs on a round VM (read by the
 # harness's gate::own::ci_entry): the whole of CI, every tier of `default` in order.
 ci_entry = "bash ci.sh"
-default = ["test-deploy", "test-infra", "test-check", "test-breakglass", "test-backup"]
+default = ["test-deploy", "test-infra", "test-check", "test-breakglass", "test-backup", "test-onboard"]
 
 [tier.test-deploy]
 argv = ["bash", "test-deploy.sh"]
@@ -25,4 +25,8 @@ timeout = 120
 
 [tier.test-backup]
 argv = ["bash", "test-backup.sh"]
+timeout = 120
+
+[tier.test-onboard]
+argv = ["bash", "test-onboard.sh"]
 timeout = 120
