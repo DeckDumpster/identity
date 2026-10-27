@@ -199,6 +199,21 @@ never before the app is verified:
   `<app>_narrow_domain` (hostname plus path) when set. Use this where the app chose to keep a
   service-token path; it needs an existing service-token policy.
 
+Decided per app (sp-802nil), from each app's service-token callers; the values live in the
+operator-side `~/.config/identity/adopt.auto.tfvars.json`, never in git:
+
+- **poke: `removed`.** No service-token caller was found in pokedumpster, so drop `poke_adopt` and
+  set `poke_human_access = "removed"`.
+- **magic: `service_only`.** deckdumpster's `deploy/cdn-check.sh` calls `https://magic.dumpster.cards`
+  with `CF_ACCESS_CLIENT_ID/SECRET` (default path `/`), so the service-token policy must stay. Drop
+  `magic_adopt`, set `magic_human_access = "service_only"` and `magic_narrow_domain` to the path
+  the deploy check uses, once deckdumpster pins that to a non-root path (a narrow domain of the
+  bare host would keep the whole site behind Access).
+
+Apply one app at a time (poke first), and check `curl -sI https://<host>/` redirects to
+`/auth/login` and not `cloudflareaccess.com`, the service-token caller still gets 200, and the
+plan is clean before the next.
+
 `ssh` has no such switch: it stays on Access with the Pocket ID login method and group `ssh-users`.
 cubby-parent's Access application lives in the cubby repo's infra and is retired there.
 `terraform test` covers both modes per app and that ssh keeps its group policy.
