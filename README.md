@@ -199,16 +199,13 @@ never before the app is verified:
   `<app>_narrow_domain` (hostname plus path) when set. Use this where the app chose to keep a
   service-token path; it needs an existing service-token policy.
 
-Decided per app (sp-802nil), from each app's service-token callers; the values live in the
-operator-side `~/.config/identity/adopt.auto.tfvars.json`, never in git:
-
-- **poke: `removed`.** No service-token caller was found in pokedumpster, so drop `poke_adopt` and
-  set `poke_human_access = "removed"`.
-- **magic: `service_only`.** deckdumpster's `deploy/cdn-check.sh` calls `https://magic.dumpster.cards`
-  with `CF_ACCESS_CLIENT_ID/SECRET` (default path `/`), so the service-token policy must stay. Drop
-  `magic_adopt`, set `magic_human_access = "service_only"` and `magic_narrow_domain` to the path
-  the deploy check uses, once deckdumpster pins that to a non-root path (a narrow domain of the
-  bare host would keep the whole site behind Access).
+Applied (2026-10-27; the values live in the operator-side
+`~/.config/identity/adopt.auto.tfvars.json`, never in git): **poke and magic are both `removed`**
+(`poke_human_access` and `magic_human_access` = `"removed"`, `poke_adopt` and `magic_adopt` = `null`),
+so neither has an Access application any more. Machine callers authenticate with a Pocket ID
+`client_credentials` token, not an Access service token: pokedumpster (sp-6tps3i, sp-8pjx8m) and
+deckdumpster's `deploy/cdn-check.sh` (sp-x6p6dd); the `CF_ACCESS_*` GitHub secrets are deleted. Only
+the `ssh` Access application remains.
 
 Apply one app at a time (poke first), and check `curl -sI https://<host>/` redirects to
 `/auth/login` and not `cloudflareaccess.com`, the service-token caller still gets 200, and the
