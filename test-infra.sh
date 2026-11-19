@@ -27,3 +27,11 @@ terraform test
   terraform validate
   terraform test
 )
+# The dumpster.cards zone settings root (own state key, Cloudflare only).
+(
+  cd "$root/infra-dumpster-cards"
+  terraform fmt -check -recursive
+  { terraform init -backend=false -input=false || { sleep 5; terraform init -backend=false -input=false; }; }
+  terraform validate
+  terraform test
+)

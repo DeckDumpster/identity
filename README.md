@@ -215,6 +215,26 @@ plan is clean before the next.
 cubby-parent's Access application lives in the cubby repo's infra and is retired there.
 `terraform test` covers both modes per app and that ssh keeps its group policy.
 
+## Apply: dumpster.cards zone
+
+`infra-dumpster-cards/` declares two zone settings for dumpster.cards (own state key
+`identity/infra-dumpster-cards/terraform.tfstate`): Always Use HTTPS on (edge 301 from http to
+https) and HSTS `max-age=31536000` with no `includeSubDomains` and no `preload`. Needs:
+
+- `CLOUDFLARE_API_TOKEN` scoped to Zone > Zone Settings: Edit on the dumpster.cards zone only;
+- the dumpster.cards zone id (the `cloudflare_zone_id` in dumpstar `infra/edge/common.auto.tfvars`);
+- an AWS session that can assume `<DeployRoleArn>` and reach `<StateBucketName>`.
+
+      cd infra-dumpster-cards
+      terraform init -backend-config="bucket=<StateBucketName>" \
+        -backend-config="assume_role={role_arn=\"<DeployRoleArn>\"}"
+      terraform plan -out=zone.tfplan -var cloudflare_zone_id=<zone>
+      terraform apply zone.tfplan
+
+The first plan is `2 to add, 0 to change, 0 to destroy`: a zone setting always exists, so
+create is an update and nothing is imported. To undo, revert the commit and apply; both settings
+go off.
+
 ## Access apps (dumpstar, ssh, poke, magic)
 
 `infra/access_<app>.tf` brings each existing Access application and its allow policy under
